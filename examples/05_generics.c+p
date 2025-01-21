@@ -78,7 +78,9 @@ declare_list(T) *=>
 			return (@list.items):(@l)
 		)
 	)
-:- (list(T) *=> This), New =.. [smethod(This, new), size_t var capacity].
+:-	(list(T) *=> This), 
+	(smethod(This, new) *=> NewName), 
+	New =.. [NewName, size_t var capacity].
 
 list(T) *=> ListType :-
 	(mangled_name(T) *=> MT),
