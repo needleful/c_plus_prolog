@@ -1,0 +1,5 @@
+:- include(stdio).
+
+int func main =>
+	puts("Hello world!");
+	return 0.
