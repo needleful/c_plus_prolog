@@ -27,14 +27,15 @@ format_cpp_line((S,I), (:- Directive)) :- !,
 
 format_cpp_line((S,I), (Head => Body)) :-
 	format_block_head((S,I), Head),
-	format_block((S,I), Body),
+	functor(Head, Type, _),
+	format_block((S,I), Type, Body),
 	format_block_tail((S,I), Head).
 
 format_cpp_line((S,I), if(then(Cond, Result))) :-
 	write(S, 'if'),
 	in_parens(S,
 		format_cpp_exp((S,I), Cond)),
-	format_block((S,I), Result).
+	format_block((S,I), if, Result).
 
 format_cpp_line((S,I), return(Value)) :-
 	write(S, "return "),
@@ -88,11 +89,14 @@ format_block_tail((S,_), Head) :-
 	format(S, " ~w;", Name).
 format_block_tail(_,_).
 
-format_block((S,I), Block) :-
+format_block((S,I), Type, Block) :-
 	write(S, " {"),
 	nl(S),
 	string_concat(I, "\t", I2),
-	write_func_lines((S,I2), Block),
+	(	Type=enum
+	->	write_enum((S,I2), Block)
+	;	write_func_lines((S,I2), Block)
+	),
 	write(S, I),
 	write(S, "}").
 
@@ -104,12 +108,30 @@ format_directive((S,I), include, [Name|Names]) :-
 	),
 	format_directive((S,I), include, Names).
 
+
 write_func_lines(SS, First;Next) :-
 	format_line(SS, First),
 	write_func_lines(SS, Next).
 
 write_func_lines(SS, Final) :-
 	format_line(SS, Final).
+
+write_enum((S,I), First;Next) :-
+	write_enum_value((S,I), First),
+	write(S, ",\n"),
+	write_enum((S,I), Next).
+
+write_enum((S,I), Final) :-
+	write_enum_value((S,I), Final),
+	nl(S).
+
+write_enum_value((S,I), Name) :- atom(Name),
+	write(S, I),
+	write(S, Name).
+write_enum_value((S,I), Name=Value) :- atom(Name),
+	write_enum_value((S,I), Name),
+	write(S, " = "),
+	format_cpp_exp(Value). 
 
 format_cpp_args(_, [], _).
 format_cpp_args((S,I), [V|A]) :- !,
