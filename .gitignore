@@ -1,4 +1,3 @@
-*.c
-*.o
+output/
 *.exe
-*.so
+*.out
