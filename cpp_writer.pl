@@ -265,10 +265,13 @@ list(S, [H|T], Sep) :-
 exp((S,_), A) :- atomic(A),
 	write_term(S, A, [quoted(true)]).
 
-exp((S,I), Array:Index) :-
+exp(SS, Type:Attrib) :-
+	type(SS, Type:Attrib).
+
+exp((S,I), [](Index, Array)) :-
 	exp((S,I), Array),
 	write(S, "["),
-	exp((S,I), Index),
+	exp_list((S,I), Index),
 	write(S, "]").
 
 exp(SS, var(Type, Name)) :-
@@ -313,6 +316,10 @@ cpp_functor(SS, Op, [A]) :- c_op(Op, Type),
 
 cpp_functor(SS, Op, [A, B]) :- c_op(Op, Type),
 	bin_op(SS, Type, Op, A, B).
+
+cpp_functor(SS, Op, [A]) :- op_rename(Op, COp),
+	c_op(COp, Type),
+	unary_op(SS, COp, Type, A).
 
 cpp_functor(SS, Op, [A, B]) :- op_rename(Op, COp),
 	c_op(COp, Type),

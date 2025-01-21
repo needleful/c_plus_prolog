@@ -57,3 +57,4 @@ op_rename('/?', '%').
 op_rename('or', '||').
 op_rename('and', '&&').
 op_rename('=<', '<=').
+op_rename('@', '*').

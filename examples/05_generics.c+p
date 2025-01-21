@@ -14,7 +14,7 @@ declare_list(T) *=>
 		This var this;
 		this.items = T:ptr:ptr <- malloc(sizeof(T:ptr:ptr));
 		void:ptr var raw_data = malloc(sizeof(T)*capacity + sizeof(size_t)*2);
-		@this.items = T:ptr <- &(size_t:ptr <- raw_data):2;
+		@this.items = T:ptr <- &(size_t:ptr <- raw_data)[2];
 		@capacity(this) = capacity;
 		@length(this) = 0;
 		return this
@@ -22,13 +22,13 @@ declare_list(T) *=>
 
 	(size_t:ptr func (This, capacity).method =>
 		return this.items then
-			&(size_t:ptr <- @this.items):(-2)
+			&(size_t:ptr <- @this.items)[-2]
 			else 0
 	);
 
 	(size_t:ptr func (This, length).method =>
 		return this.items
-			then &(size_t:ptr <- @this.items):(-1)
+			then &(size_t:ptr <- @this.items)[-1]
 			else 0
 	);
 
@@ -36,7 +36,7 @@ declare_list(T) *=>
 		void:ptr var raw_data = realloc(
 			void:ptr <- capacity(this), 
 			sizeof(T)*new_capacity + sizeof(size_t)*2);
-		@this.items = T:ptr <- &(size_t:ptr <- raw_data):2;
+		@this.items = T:ptr <- &(size_t:ptr <- raw_data)[2];
 		@capacity(this) = new_capacity
 	);
 
