@@ -2,10 +2,10 @@
 	read_file/2
 ]).
 
-:- op(1150, xfx, '*=>'). 
-:- op(975,  fx,  if).
 :- op(975,  fx,  return).
+:- op(1150, xfx, '*=>').
 :- op(950,  xfy, then).
+:- op(950,  xfy, do).
 :- op(950,  xfy, else).
 :- op(800,  yfx, or).
 :- op(750,  yfx, and).
@@ -26,9 +26,9 @@
 :- op(650,  xfx, var).
 :- op(610,  fx,  '&').
 :- op(400,  yfx, '/?').
-:- op(300, yf, []).
 :- op(150, fx, !).
-:- op(100,  fx, @).
+:- op(120,  fx, @).
+:- op(110, yf, []).
 
 read_file(Name, Terms) :-
 	read_file_to_terms(Name, Terms, [module(cpp_reader)]).

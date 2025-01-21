@@ -35,22 +35,25 @@ expand_macros('*=>'(_, _), '*=>').
 expand_macros('*=>'(_, _) :- _, '*=>').
 
 expand_macros(Term, NewTerm) :-
-	(	'*=>'(Term, Term2),
-		!,
-		expand_macros(Term2, NewTerm)
-	;	atomic(Term),
-		NewTerm = Term,
+	% Expand sub-items
+	(	atomic(Term),
+		Term2 = Term,
 		!
 	;	is_list(Term),
 		!, 
-		maplist(expand_macros, Term, NewTerm)
+		maplist(expand_macros, Term, Term2)
 	;	Term =..[Fn|Args],
 		!,
 		expand_macros(Fn, NewFn),
 		expand_macros(Args, NewArgs),
-		NewTerm =.. [NewFn|NewArgs]
-	;	NewTerm = Term,
+		Term2 =.. [NewFn|NewArgs]
+	;	Term2 = Term,
 		!
+	),
+	% Apply Macros until they no longer apply
+	(	'*=>'(Term2, Term3)
+	->	expand_macros(Term3, NewTerm)
+	;	NewTerm = Term2
 	).
 
 indented_line(SS, A;B) :-
@@ -74,11 +77,14 @@ plain_line((S,I), (Head => Body)) :-
 	block((S,I), Type, Body),
 	block_tail((S,I), Head).
 
-plain_line((S,I), if(then(Cond, Result))) :-
-	write(S, 'if'),
+plain_line((S,I), do(H,B)) :- H =..[Type|Do],
+	write(S, Type),
 	in_parens(S,
-		exp((S,I), Cond)),
-	block((S,I), if, Result).
+		exp_list((S,I), Do)),
+	block((S,I), do, B).
+
+plain_line(SS, then(C,B)) :-
+	cond_block(SS, then(C,B)).
 
 plain_line((S,I), return(Value)) :-
 	write(S, "return "),
@@ -105,6 +111,20 @@ plain_line(_, Unknown) :- !,
 	format("ERROR: {~W} is not valid C+P code.~n",
 		[Unknown, [character_escapes(true), quoted(true)]]),
 	fail.
+
+cond_block((S,I), then(Cond, Result)) :-
+	write(S, 'if '),
+	in_parens(S,
+		exp((S,I), Cond)),
+	cond_block((S,I), Result).
+
+cond_block((S,I), else(IfTrue, IfFalse)) :-
+	cond_block((S,I),IfTrue),
+	write(S, ' else '),
+	cond_block((S,I), IfFalse).
+
+cond_block(SS, B) :-
+	block(SS, if, B).
 
 block_head((S,I), func(Name)) :-
 	block_head((S,I), func(void, Name)).
@@ -201,7 +221,6 @@ var(SS, Type, Name, _) :-
 
 single_var(SS, (Base:Type):Sp, Name) :-
 	single_var(SS, Base:Type:Sp, Name).
-
 single_var(SS, BaseType:Special, Name) :-
 	qual_type(SS, BaseType, false),
 	special_var(SS, Special, Name).
@@ -220,6 +239,10 @@ qual_type((S,_), ptr, CouldBePointer) :-
 	).
 qual_type((S,_), Atom, _) :- atom(Atom),
 	write(S, Atom).
+qual_type((S,I), typeof(Exp), _) :-
+	write(S, 'typeof'),
+	in_parens(S,
+		exp((S,I), Exp)).
 qual_type(SS, atomic(Type), CBP) :-
 	qual_type(SS, '_Atomic'(Type), CBP).
 qual_type(SS, Head => Type, _) :-
@@ -233,32 +256,28 @@ special_var(SS, (A:B):C,Name) :-
 	special_var(SS, A:B:C, Name).
 
 special_var((S,I), First:Next, Name) :-
-	type_prefix((S,I), First, no),
-	special_var((S,I), Next, Name),
-	type_suffix(S, First, no).
+	type_prefix((S,I), First),
+	(	Name = []
+	->	special_var((S,I), Next, Name)
+	;	in_parens(S,
+			special_var((S,I), Next, Name))
+	),
+	type_suffix(S, First).
 
 special_var((S,I), Last, Name) :-
-	type_prefix((S,I), Last, Name),
+	type_prefix((S,I), Last),
 	(	Name = []
-	;	write(S, Name)),
-	type_suffix(S, Last, Name).
+	;	write(S, " "), 
+		write(S, Name)),
+	type_suffix(S, Last).
 
-type_prefix((S,_), ptr, []) :- write(S, "*").
-type_prefix(_, _, []).
+type_prefix((S,_), ptr) :- write(S, "*").
+type_prefix(SS, Qual) :- qual_type(SS, Qual, true).
+type_prefix(_,_).
 
-type_prefix((S,_), ptr, _) :- write(S, "*(").
-type_prefix((S,_), A, _) :- (A = array; A = array(_)),
-	write(S, "(").
-type_prefix(SS, Qual, _) :- qual_type(SS, Qual, true).
-
-
-type_suffix(S, array, []) :- write(S, "[]").
-type_suffix(S, array(Len), []) :- format(S, "[~w]", [Len]).
-type_suffix(_, _, []).
-
-type_suffix(S, array, _) :- write(S, ")[]").
-type_suffix(S, array(Len), _) :- format(S, ")[~w]", [Len]).
-type_suffix(S, _, _) :- write(S, ")").
+type_suffix((S,_), array) :- write(S, "[]").
+type_suffix(S, array(Len)) :- format(S, "[~w]", [Len]).
+type_suffix(_, _).
 
 list(_, [], _).
 list(S, [Last], _) :-
@@ -267,6 +286,9 @@ list(S, [H|T], Sep) :-
 	write(S, H),
 	write(S, Sep),
 	list(S, T, Sep).
+
+exp((S,_), A) :- atom(A),
+	write(S, A).
 
 exp((S,_), A) :- atomic(A),
 	write_term(S, A, [quoted(true)]).
@@ -292,8 +314,10 @@ exp((S,I), then(Cond, else(IfThen, IfElse))) :-
 		exp((S,I), IfElse))).
 
 exp((S,I), '<-'(Type, Exp)) :-
-	in_parens(S, type((S,I), Type)),
-	exp((S,I), Exp).
+	in_parens(S, (
+		in_parens(S, 
+			type((S,I), Type)),
+		exp((S,I), Exp))).
 
 exp((S,I), {Val}) :-
 	write(S, "{"),

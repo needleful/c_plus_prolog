@@ -42,6 +42,7 @@ c_op('<<=',	assign).
 c_op('>>=',	assign).
 
 c_op(',',	control).
+c_op(';',	control).
 
 c_op('.',	access).
 c_op('->',	access).

@@ -10,7 +10,7 @@ func even_check(int var x) =>
 		x /? 2 then "odd" else "even").
 
 int func main(int var argc, char:ptr:array var argv) =>
-	if argc < 3 then (
+	argc < 3 then (
 		printf("Usage: `%s <number> <number>`", argv[0]); 
 		return 1 );
 	int var (

@@ -5,84 +5,96 @@
 declare_list(int).
 declare_list(char:ptr).
 
+func main =>
+	int var size = 12;
+	int:list var myInts = (int:list, new).call(size);
+	for(int var i = 0; i < size; i += 1) do (
+		(int:list, append).call(myInts, i*i)
+	);
+	for(int var i = 0; i < size; i+= 1) do (
+		printf("%d squared = %d.\n", i, @ (int:list, at).call(myInts, i))
+	).
+
 declare_list(T) *=>
 	(struct This =>
 		T:ptr:ptr var items
+	);
+
+	(size_t:ptr func (This, capacity).method =>
+		return this.items
+			then (size_t:ptr <- @this.items) - 2
+			else 0
+	);
+
+	(size_t:ptr func (This, length).method =>
+		return this.items 
+			then (size_t:ptr <- @this.items) - 1
+			else 0
 	);
 
 	(This func New =>
 		This var this;
 		this.items = T:ptr:ptr <- malloc(sizeof(T:ptr:ptr));
 		void:ptr var raw_data = malloc(sizeof(T)*capacity + sizeof(size_t)*2);
-		@this.items = T:ptr <- &(size_t:ptr <- raw_data)[2];
-		@capacity(this) = capacity;
-		@length(this) = 0;
+		@ this.items = T:ptr <- & (size_t:ptr <- raw_data)[2];
+		@Capacity = capacity;
+		@Length = 0;
 		return this
-	);
-
-	(size_t:ptr func (This, capacity).method =>
-		return this.items then
-			&(size_t:ptr <- @this.items)[-2]
-			else 0
-	);
-
-	(size_t:ptr func (This, length).method =>
-		return this.items
-			then &(size_t:ptr <- @this.items)[-1]
-			else 0
 	);
 
 	(func (This, resize).method(size_t var new_capacity) =>
 		void:ptr var raw_data = realloc(
-			void:ptr <- capacity(this), 
+			void:ptr <- Capacity, 
 			sizeof(T)*new_capacity + sizeof(size_t)*2);
 		@this.items = T:ptr <- &(size_t:ptr <- raw_data)[2];
-		@capacity(this) = new_capacity
+		@Capacity = new_capacity
 	);
 
 	(func (This:ptr, clear).method =>
-		free(capacity(@this));
+		free((This, capacity).call(@this));
 		free(this->items);
 		this->items = 'NULL'
 	);
 
 	(T:ptr func (This, at).method(size_t var id) =>
-		return &(@this.items):id
+		return @this.items+id
 	);
 
 	(func (This, append).method(T var item) =>
-		if \+ this.items then (
+		!this.items then (
 			puts("Internal error. List was not allocated properly.");
 			return
 		)
-		else (\+ @this.items) then (
-			@this.items = @(This, new).method(1).items
+		else (!@this.items) then (
+			@this.items = @ (This, new).call(1).items
 		);
-		size_t var length = @length(this);
-		size_t var capacity = @capacity(this);
-		if length >= capacity then 
-			resize(this, capacity*2);
-		@at(this, length) = item;
-		@length(this) += 1
+		size_t var length = @Length;
+		size_t var capacity = @Capacity;
+		length >= capacity then 
+			(This, resize).call(this, capacity*2);
+		@ (This, at).call(this, length) = item;
+		@Length += 1
 	);
 
 	(T func (This, pop).method =>
-		if(!list.items or !@list.items or @length(list) =< 0) then (
+		(!this.items or !@this.items or @Length =< 0) then (
 			puts("Error: Popped empty list.");
-			T var default;
-			return default
+			T var junk = T <- 0;
+			return junk
 		)
 		else (
-			size_t:ptr var l = length(list);
+			size_t:ptr var l = Length;
 			@l -= 1;
-			return (@list.items):(@l)
+			return (@this.items)[@l]
 		)
 	)
-:-	(list(T) *=> This), 
+:-	(T:list *=> This), 
 	(method_name(This, new) *=> NewName), 
-	New =.. [NewName, size_t var capacity].
+	New =.. [NewName, size_t var capacity],
+	((This, capacity).call(this) *=> Capacity),
+	((This, length).call(this) *=> Length).
 
-list(T) *=> ListType :-
+T:list *=> ListType :-
 	(mangled_name(T) *=> MT),
 	atom_concat('gen_list_', MT, ListType).
 
@@ -104,15 +116,28 @@ method_name(Struct, Func) *=> SName :-
 	atom_concat(Struct, '_', Name2),
 	atom_concat(Name2, Func, SName).
 
+(SType, Func).Method *=> SMethod :- 
+	(	atom(SType)
+	->	Struct = SType
+	;	Struct:_ = SType
+	),
+	(	Method = method,
+		Args = []
+	;	compound(Method),
+		Method =.. [method|Args]
+	),
+	(method_name(Struct, Func) *=> SName),
+	SMethod =.. [SName, SType var this|Args].
+
 (SType, Func).Call *=> SCall :- 
 	(	atom(SType)
 	->	Struct = SType
 	;	Struct:_ = SType
 	),
-	(	Call = method,
+	(	Call = call,
 		Args = []
 	;	compound(Call),
-		Call =.. [method|Args]
+		Call =.. [call|Args]
 	),
 	(method_name(Struct, Func) *=> SName),
-	SCall =.. [SName, SType var this|Args].
+	SCall =.. [SName|Args].
