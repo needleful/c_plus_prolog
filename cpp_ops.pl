@@ -44,6 +44,7 @@ c_op('>>=',	assign).
 c_op(',',	control).
 
 c_op('.',	access).
+c_op('->',	access).
 
 c_type_block(enum).
 c_type_block(struct).

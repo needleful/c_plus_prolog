@@ -79,7 +79,7 @@ declare_list(T) *=>
 		)
 	)
 :-	(list(T) *=> This), 
-	(smethod(This, new) *=> NewName), 
+	(method_name(This, new) *=> NewName), 
 	New =.. [NewName, size_t var capacity].
 
 list(T) *=> ListType :-
@@ -100,7 +100,7 @@ mangle_concat(Atom, Next) *=> R :-
 		(mangle_concat(Atom3, Name) *=> R)
 	).
 
-smethod(Struct, Func) *=> SName :-
+method_name(Struct, Func) *=> SName :-
 	atom_concat(Struct, '_', Name2),
 	atom_concat(Name2, Func, SName).
 
@@ -114,5 +114,5 @@ smethod(Struct, Func) *=> SName :-
 	;	compound(Call),
 		Call =.. [method|Args]
 	),
-	(smethod(Struct, Func) *=> SName),
+	(method_name(Struct, Func) *=> SName),
 	SCall =.. [SName, SType var this|Args].

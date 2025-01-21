@@ -199,6 +199,9 @@ var((S,I), Type, (Name,Names), Sep) :-
 var(SS, Type, Name, _) :-
 	single_var(SS, Type, Name).
 
+single_var(SS, (Base:Type):Sp, Name) :-
+	single_var(SS, Base:Type:Sp, Name).
+
 single_var(SS, BaseType:Special, Name) :-
 	qual_type(SS, BaseType, false),
 	special_var(SS, Special, Name).
@@ -225,6 +228,9 @@ qual_type((S,I), Type, CBP) :- Type =..[Qual,SubType],
 	write(S, Qual),
 	write(S, " "),
 	qual_type((S,I), SubType, CBP).
+
+special_var(SS, (A:B):C,Name) :-
+	special_var(SS, A:B:C, Name).
 
 special_var((S,I), First:Next, Name) :-
 	type_prefix((S,I), First, no),
