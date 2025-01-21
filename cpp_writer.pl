@@ -1,48 +1,91 @@
-:- module(cpp_writer, [
+:- module(writer, [
 	write_file/2
 ]).
 
 :- use_module(cpp_common).
 :- use_module(cpp_ops).
 
+:- dynamic '*=>'/2.
+
 write_file(Terms, File) :-
+	retractall('*=>'(_,_)),
+	find_macros(Terms),
+	expand_macros(Terms, NewTerms),
 	setup_call_cleanup(
 		open(File, write, S, [encoding(utf8)]),
-		write_lines((S,""), Terms),
+		write_lines((S,""), NewTerms),
 		close(S)).
+
+find_macros(Terms) :-
+	maplist(find_macro, Terms).
+
+find_macro('*=>'(A, B)) :- !,
+	assertz('*=>'(A, B)).
+find_macro('*=>'(A, B) :- C) :- !,
+	assertz('*=>'(A, B) :- C).
+find_macro(_).
 
 write_lines(_, []).
 write_lines((S,I), [Term|Others]) :-
-	format_line((S,I), Term),
+	expand_macros(Term, NewTerm),
+	indented_line((S,I), NewTerm),
 	write_lines((S,I), Others).
 
-format_line((S,I), Term) :-
+expand_macros('*=>'(_, _), '*=>').
+expand_macros('*=>'(_, _) :- _, '*=>').
+
+expand_macros(Term, NewTerm) :-
+	(	'*=>'(Term, Term2),
+		!,
+		expand_macros(Term2, NewTerm)
+	;	atomic(Term),
+		NewTerm = Term,
+		!
+	;	is_list(Term),
+		!, 
+		maplist(expand_macros, Term, NewTerm)
+	;	Term =..[Fn|Args],
+		!,
+		expand_macros(Fn, NewFn),
+		expand_macros(Args, NewArgs),
+		NewTerm =.. [NewFn|NewArgs]
+	;	NewTerm = Term,
+		!
+	).
+
+indented_line(SS, A;B) :-
+	indented_line(SS, A),
+	indented_line(SS, B).
+
+indented_line((S,I), Term) :-
 	write(S, I),
-	format_cpp_line((S,I), Term),
+	plain_line((S,I), Term),
 	nl(S).
 
-format_cpp_line((S,I), (:- Directive)) :- !,
+plain_line((S,I), (:- Directive)) :- !,
 	Directive =.. [Name| Args],
-	format_directive((S,I), Name, Args).
+	directive((S,I), Name, Args).
 
-format_cpp_line((S,I), (Head => Body)) :-
-	format_block_head((S,I), Head),
+plain_line(_, '*=>').
+
+plain_line((S,I), (Head => Body)) :-
+	block_head((S,I), Head),
 	functor(Head, Type, _),
-	format_block((S,I), Type, Body),
-	format_block_tail((S,I), Head).
+	block((S,I), Type, Body),
+	block_tail((S,I), Head).
 
-format_cpp_line((S,I), if(then(Cond, Result))) :-
+plain_line((S,I), if(then(Cond, Result))) :-
 	write(S, 'if'),
 	in_parens(S,
-		format_cpp_exp((S,I), Cond)),
-	format_block((S,I), if, Result).
+		exp((S,I), Cond)),
+	block((S,I), if, Result).
 
-format_cpp_line((S,I), return(Value)) :-
+plain_line((S,I), return(Value)) :-
 	write(S, "return "),
-	format_cpp_exp((S,I), Value),
+	exp((S,I), Value),
 	write(S, ";").
 
-format_cpp_line((S,_), Atom) :- atom(Atom),
+plain_line((S,_), Atom) :- atom(Atom),
 	write(S, Atom),
 	% Standalone atoms are either a keyword or a function
 	% taking zero arguments.
@@ -51,45 +94,46 @@ format_cpp_line((S,_), Atom) :- atom(Atom),
 	;	write(S, "();")
 	).
 
-format_cpp_line((S,I), Functor) :-
-	(	format_block_head((S,I), Functor),
+plain_line((S,I), Functor) :-
+	(	block_head((S,I), Functor),
 		!,
-		format_block_tail((S,I), Functor)
-	;	format_cpp_exp((S,I), Functor)),
+		block_tail((S,I), Functor)
+	;	exp((S,I), Functor)),
 	write(S, ";").
 
-format_cpp_line(_, Unknown) :- !,
+plain_line(_, Unknown) :- !,
 	format("ERROR: {~W} is not valid C+P code.~n",
 		[Unknown, [character_escapes(true), quoted(true)]]),
 	fail.
 
-format_block_head((S,I), func(Name)) :-
-	format_block_head((S,I), func(void, Name)).
+block_head((S,I), func(Name)) :-
+	block_head((S,I), func(void, Name)).
 
-format_block_head((S,I), func(Type, Fn)) :-
-	format(S, "~w ", [Type]),
+block_head((S,I), func(Type, Fn)) :-
+	type((S,I), Type),
+	write(S, " "),
 	(	atom(Fn)
 	->	format(S, "~w()", [Fn])
 	;	Fn =.. [Name|Args],
 		write(S, Name),
 		in_parens(S,
-			format_cpp_args((S,I), Args))
+			args((S,I), Args))
 	).
 
-format_block_head((S,_), Head) :- Head =.. [Type, Name],
+block_head((S,_), Head) :- Head =.. [Type, Name],
 	c_type_block(Type),
 	format(S, "typedef ~w ~w_t", [Type, Name]).
 
-format_block_head((S,_), Head) :- c_type_block(Head),
+block_head((S,_), Head) :- c_type_block(Head),
 	write(S, Head). 
 
-format_block_tail((S,_), Head) :-
+block_tail((S,_), Head) :-
 	Head =.. [Type, Name],
 	c_type_block(Type),
 	format(S, " ~w;", Name).
-format_block_tail(_,_).
+block_tail(_,_).
 
-format_block((S,I), Type, Block) :-
+block((S,I), Type, Block) :-
 	write(S, " {"),
 	nl(S),
 	string_concat(I, "\t", I2),
@@ -100,21 +144,21 @@ format_block((S,I), Type, Block) :-
 	write(S, I),
 	write(S, "}").
 
-format_directive(_, include, []).
-format_directive((S,I), include, [Name|Names]) :-
+directive(_, include, []).
+directive((S,I), include, [Name|Names]) :-
 	(	Name = local(LocalName)
 	->	format(S, "#include \"~w.h\"~n", [LocalName])
 	;	format(S, "#include <~w.h>~n", [Name])
 	),
-	format_directive((S,I), include, Names).
+	directive((S,I), include, Names).
 
 
 write_func_lines(SS, First;Next) :-
-	format_line(SS, First),
+	indented_line(SS, First),
 	write_func_lines(SS, Next).
 
 write_func_lines(SS, Final) :-
-	format_line(SS, Final).
+	indented_line(SS, Final).
 
 write_enum((S,I), First;Next) :-
 	write_enum_value((S,I), First),
@@ -131,159 +175,176 @@ write_enum_value((S,I), Name) :- atom(Name),
 write_enum_value((S,I), Name=Value) :- atom(Name),
 	write_enum_value((S,I), Name),
 	write(S, " = "),
-	format_cpp_exp(Value). 
+	exp(Value). 
 
-format_cpp_args(_, [], _).
-format_cpp_args((S,I), [V|A]) :- !,
+args(_, [], _).
+args((S,I), [V|A]) :- !,
 	(	V = var(Type, Args)
-	->	format_var((S,I), Type, Args, ", ")
-	;	format_type((S,I), V)
+	->	var((S,I), Type, Args, ", ")
+	;	type((S,I), V)
 	),
 	(	A = [_|_]
 	->	write(S, ", "),
-		format_cpp_args((S,I), A)
+		args((S,I), A)
 	;	true
 	).
 
-format_type((S,I), Type) :-
-	format_var((S,I), Type, [], " ").
+type((S,I), Type) :-
+	var((S,I), Type, [], " ").
 
-format_var((S,I), Type, (Name,Names), Sep) :-
-	format_var((S,I), Type, Name, _),
+var((S,I), Type, (Name,Names), Sep) :-
+	var((S,I), Type, Name, _),
 	write(S, Sep),
-	format_var((S,I), Type, Names, Sep).
-format_var(SS, Type, Name, _) :-
-	format_single_var(SS, Type, Name).
+	var((S,I), Type, Names, Sep).
+var(SS, Type, Name, _) :-
+	single_var(SS, Type, Name).
 
-format_single_var(SS, BaseType:Special, Name) :-
-	format_qual_type(SS, BaseType, false),
-	format_special_var(SS, Special, Name).
-format_single_var(SS, Type, []) :- !,
-	format_qual_type(SS, Type, false).
-format_single_var((S,I), Type, Name) :- !,
-	format_qual_type((S,I), Type, false),
+single_var(SS, BaseType:Special, Name) :-
+	qual_type(SS, BaseType, false),
+	special_var(SS, Special, Name).
+single_var(SS, Type, []) :- !,
+	qual_type(SS, Type, false).
+single_var((S,I), Type, Name) :- !,
+	qual_type((S,I), Type, false),
 	write(S, " "),
-	format_cpp_exp((S,I), Name).
+	exp((S,I), Name).
 
 
-format_qual_type((S,_), ptr, CouldBePointer) :-
+qual_type((S,_), ptr, CouldBePointer) :-
 	(	CouldBePointer = true
 	->	write(S, "*")
 	;	write(S, ptr)
 	).
-format_qual_type((S,_), Atom, _) :- atom(Atom),
+qual_type((S,_), Atom, _) :- atom(Atom),
 	write(S, Atom).
-format_qual_type(SS, atomic(Type), CBP) :-
-	format_qual_type(SS, '_Atomic'(Type), CBP).
-format_qual_type(SS, Head => Type, _) :-
-	format_cpp_line(SS, Head => Type).
-format_qual_type((S,I), Type, CBP) :- Type =..[Qual,SubType],
+qual_type(SS, atomic(Type), CBP) :-
+	qual_type(SS, '_Atomic'(Type), CBP).
+qual_type(SS, Head => Type, _) :-
+	plain_line(SS, Head => Type).
+qual_type((S,I), Type, CBP) :- Type =..[Qual,SubType],
 	write(S, Qual),
 	write(S, " "),
-	format_qual_type((S,I), SubType, CBP).
+	qual_type((S,I), SubType, CBP).
 
-format_special_var((S,I), First:Next, Name) :-
-	type_prefix((S,I), First),
-	format_special_var((S,I), Next, Name),
-	type_suffix(S, First).
+special_var((S,I), First:Next, Name) :-
+	type_prefix((S,I), First, no),
+	special_var((S,I), Next, Name),
+	type_suffix(S, First, no).
 
-format_special_var((S,I), Last, Name) :-
-	type_prefix((S,I), Last),
-	write(S, Name),
-	type_suffix(S, Last).
+special_var((S,I), Last, Name) :-
+	type_prefix((S,I), Last, Name),
+	(	Name = []
+	;	write(S, Name)),
+	type_suffix(S, Last, Name).
 
-type_prefix((S,_), ptr) :- write(S, "*(").
-type_prefix((S,_), A) :- (A = array; A = array(_)),
+type_prefix((S,_), ptr, []) :- write(S, "*").
+type_prefix(_, _, []).
+
+type_prefix((S,_), ptr, _) :- write(S, "*(").
+type_prefix((S,_), A, _) :- (A = array; A = array(_)),
 	write(S, "(").
-type_prefix(SS, Qual) :- format_qual_type(SS, Qual, true).
+type_prefix(SS, Qual, _) :- qual_type(SS, Qual, true).
 
-type_suffix(S, array) :- write(S, ")[]").
-type_suffix(S, array(Len)) :- format(S, ")[~w]", [Len]).
-type_suffix(S, _) :- write(S, ")").
 
-format_list(_, [], _).
-format_list(S, [Last], _) :-
+type_suffix(S, array, []) :- write(S, "[]").
+type_suffix(S, array(Len), []) :- format(S, "[~w]", [Len]).
+type_suffix(_, _, []).
+
+type_suffix(S, array, _) :- write(S, ")[]").
+type_suffix(S, array(Len), _) :- format(S, ")[~w]", [Len]).
+type_suffix(S, _, _) :- write(S, ")").
+
+list(_, [], _).
+list(S, [Last], _) :-
 	write(S, Last).
-format_list(S, [H|T], Sep) :-
+list(S, [H|T], Sep) :-
 	write(S, H),
 	write(S, Sep),
-	format_list(S, T, Sep).
+	list(S, T, Sep).
 
-format_cpp_exp((S,_), A) :- atomic(A),
+exp((S,_), A) :- atomic(A),
 	write_term(S, A, [quoted(true)]).
 
-format_cpp_exp((S,I), Array:Index) :-
-	format_cpp_exp((S,I), Array),
+exp((S,I), Array:Index) :-
+	exp((S,I), Array),
 	write(S, "["),
-	format_cpp_exp((S,I), Index),
+	exp((S,I), Index),
 	write(S, "]").
 
-format_cpp_exp(SS, var(Type, Name)) :-
-	format_var(SS, Type, Name, "; ").
+exp(SS, var(Type, Name)) :-
+	var(SS, Type, Name, "; ").
 
-format_cpp_exp((S,I), then(Cond, else(IfThen, IfElse))) :-
+exp((S,I), then(Cond, else(IfThen, IfElse))) :-
 	in_parens(S, 
-	(	format_cpp_exp((S,I), Cond),
+	(	exp((S,I), Cond),
 		write(S, " ? "),
-		format_cpp_exp((S,I), IfThen),
+		exp((S,I), IfThen),
 		write(S, " : "),
-		format_cpp_exp((S,I), IfElse))).
+		exp((S,I), IfElse))).
 
-format_cpp_exp((S,I), '<-'(Type, Exp)) :-
-	in_parens(S, format_type((S,I), Type)),
-	format_cpp_exp((S,I), Exp).
+exp((S,I), '<-'(Type, Exp)) :-
+	in_parens(S, type((S,I), Type)),
+	exp((S,I), Exp).
 
-format_cpp_exp((S,I), {Val}) :-
+exp((S,I), {Val}) :-
 	write(S, "{"),
-	format_struct_literal((S,I), Val),
+	struct_literal((S,I), Val),
 	write(S, "}").
 
-format_cpp_exp((S,I), Fn) :- Fn =.. [Name|Args],
-	format_functor((S,I), Name, Args).
+exp((S,I), Fn) :- Fn =.. [Name|Args],
+	cpp_functor((S,I), Name, Args).
 
-format_struct_literal((S,I), (A,B)) :-
-	format_struct_field((S,I), A),
+struct_literal((S,I), (A,B)) :-
+	struct_field((S,I), A),
 	write(S, ", "),
-	format_struct_literal((S,I), B).
-format_struct_literal((S,I), A) :-
-	format_struct_field((S,I), A). 
+	struct_literal((S,I), B).
+struct_literal((S,I), A) :-
+	struct_field((S,I), A). 
 
-format_struct_field((S,I), Name=Value) :-
+struct_field((S,I), Name=Value) :-
 	format(S, ".~w = ", [Name]),
-	format_cpp_exp((S,I), Value).
+	exp((S,I), Value).
 
-format_struct_field((S,I), V) :-
-	format_cpp_exp((S,I), V).
+struct_field(SS, V) :-
+	exp(SS, V).
 
-format_functor((S,I), Op, [A, B]) :- c_op(Op, Type),
-	format_bin_op((S,I), Type, Op, A, B).
+cpp_functor(SS, Op, [A]) :- c_op(Op, Type),
+	unary_op(SS, Op, Type, A).
 
-format_functor((S,I), Op, [A, B]) :- op_rename(Op, COp),
+cpp_functor(SS, Op, [A, B]) :- c_op(Op, Type),
+	bin_op(SS, Type, Op, A, B).
+
+cpp_functor(SS, Op, [A, B]) :- op_rename(Op, COp),
 	c_op(COp, Type),
-	format_bin_op((S,I), Type, COp, A, B).
+	bin_op(SS, Type, COp, A, B).
 
-format_functor((S,I), Fn, Args) :-
+cpp_functor((S,I), Fn, Args) :-
 	write(S, Fn),
 	in_parens(S,
 		exp_list((S,I), Args)).
 
-format_bin_op((S,I), Type, Op, A, B) :-
+bin_op((S,I), Type, Op, A, B) :-
 	(	(Type = assign; Type = control)
-	->	format_cpp_exp((S,I), A),
+	->	exp((S,I), A),
 		write(S, Op),
-		format_cpp_exp((S,I), B)
+		exp((S,I), B)
 	;
 		in_parens(S,
-		(	format_cpp_exp((S,I), A),
+		(	exp((S,I), A),
 			write(S, Op),
-			format_cpp_exp((S,I), B)))
+			exp((S,I), B)))
 	).
+
+unary_op((S, I), Op, _, A) :-
+	in_parens(S,
+	(	write(S, Op),
+		exp((S, I), A))).
 
 exp_list(_, []).
 exp_list((S,I), [A]) :-
-	format_cpp_exp((S,I), A).
+	exp((S,I), A).
 exp_list((S,I), [A|Args]) :-
-	format_cpp_exp((S,I), A),
+	exp((S,I), A),
 	write(S, ", "),
 	exp_list((S,I), Args).
 

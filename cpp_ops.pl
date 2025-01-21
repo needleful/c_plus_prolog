@@ -54,3 +54,6 @@ c_standalone(break).
 c_standalone(continue).
 
 op_rename('/?', '%').
+op_rename('or', '||').
+op_rename('and', '&&').
+op_rename('=<', '<=').

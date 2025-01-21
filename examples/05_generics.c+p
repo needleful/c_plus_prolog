@@ -1,0 +1,116 @@
+:- include(ctype, stdbool, stdio, stdlib, string).
+
+% Poor man's generics
+
+declare_list(int).
+declare_list(char:ptr).
+
+declare_list(T) *=>
+	(struct This =>
+		T:ptr:ptr var items
+	);
+
+	(size_t func (This,new).method(size_t var capacity) =>
+		This var this;
+		this.items = T:ptr:ptr <- malloc(sizeof(T:ptr:ptr));
+		void:ptr var raw_data = malloc(sizeof(T)*capacity + sizeof(size_t)*2);
+		@this.items = T:ptr <- &(size_t:ptr <- raw_data):2;
+		@capacity(this) = capacity;
+		@length(this) = 0;
+		return this
+	);
+
+	(size_t:ptr func (This, capacity).method =>
+		return this.items then
+			&(size_t:ptr <- @this.items):(-2)
+			else 0
+	);
+
+	(size_t:ptr func (This, length).method =>
+		return this.items
+			then &(size_t:ptr <- @this.items):(-1)
+			else 0
+	);
+
+	(func (This, resize).method(size_t var new_capacity) =>
+		void:ptr var raw_data = realloc(
+			void:ptr <- capacity(this), 
+			sizeof(T)*new_capacity + sizeof(size_t)*2);
+		@this.items = T:ptr <- &(size_t:ptr <- raw_data):2;
+		@capacity(this) = new_capacity
+	);
+
+	(func (This:ptr, clear).method =>
+		free(capacity(@this));
+		free(this->items);
+		this->items = NULL
+	);
+
+	(T:ptr func (This, at).method(size_t var id) =>
+		return &(@this.items):id
+	);
+
+	(func (This, append).method(T var item) =>
+		if \+ this.items then (
+			puts("Internal error. List was not allocated properly.");
+			return
+		)
+		else (\+ @this.items) then (
+			@this.items = @(This, new).method(1).items
+		);
+		size_t var length = @length(this);
+		size_t var capacity = @capacity(this);
+		if length >= capacity then 
+			resize(this, capacity*2);
+		@at(this, length) = item;
+		@length(this) += 1
+	);
+
+	(T func (This, pop).method =>
+		if(!list.items or !@list.items or @length(list) =< 0) then (
+			puts("Error: Popped empty list.");
+			T var default;
+			return default
+		)
+		else (
+			size_t:ptr var l = length(list);
+			@l -= 1;
+			return (@list.items):(@l)
+		)
+	)
+:- (list(T) *=> This).
+
+list(T) *=> ListType :-
+	(mangled_name(T) *=> MT),
+	atom_concat('gen_list_', MT, ListType).
+
+mangled_name(Type) *=> Renamed :- 
+	(	atom(Type)
+	->	Renamed = Type
+	;	(mangle_concat('', Type) *=> Renamed)
+	).
+
+mangle_concat(Atom, Next) *=> R :-
+	(	atom(Next)
+	->	atom_concat(Atom, Next, R)
+	;	Atom2:Name = Next,
+		atom_concat(Atom, Atom2, Atom3),
+		(mangle_concat(Atom3, Name) *=> R)
+	).
+
+smethod(Struct, Func) *=> SName :-
+	atom_concat(Struct, '_', Name2),
+	atom_concat(Name2, Func, SName).
+
+(SType, Func).Call *=> SCall :- 
+	(	atom(SType)
+	->	Struct = SType
+	;	Struct:_ = SType
+	),
+	(	Call = method,
+		Args = []
+	;	compound(Call),
+		Call =.. [method|Args]
+	),
+	(smethod(Struct, Func) *=> SName),
+	SCall =.. [SName, SType var this|Args].
