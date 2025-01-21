@@ -1,0 +1,3 @@
+:- include(stdio).
+
+func main => puts("Hello, world!").

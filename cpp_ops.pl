@@ -1,6 +1,7 @@
 :- module(cpp_ops, [
 	c_op/2,
 	c_standalone/1,
+	c_type_block/1,
 	op_rename/2
 ]).
 
@@ -44,8 +45,12 @@ c_op(',',	control).
 
 c_op('.',	access).
 
-op_rename('/?', '%').
+c_type_block(enum).
+c_type_block(struct).
+c_type_block(union).
 
 c_standalone(return).
 c_standalone(break).
 c_standalone(continue).
+
+op_rename('/?', '%').
