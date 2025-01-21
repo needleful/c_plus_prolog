@@ -10,7 +10,7 @@ declare_list(T) *=>
 		T:ptr:ptr var items
 	);
 
-	(size_t func (This,new).method(size_t var capacity) =>
+	(This func New =>
 		This var this;
 		this.items = T:ptr:ptr <- malloc(sizeof(T:ptr:ptr));
 		void:ptr var raw_data = malloc(sizeof(T)*capacity + sizeof(size_t)*2);
@@ -78,7 +78,7 @@ declare_list(T) *=>
 			return (@list.items):(@l)
 		)
 	)
-:- (list(T) *=> This).
+:- (list(T) *=> This), New =.. [smethod(This, new), size_t var capacity].
 
 list(T) *=> ListType :-
 	(mangled_name(T) *=> MT),
