@@ -43,7 +43,7 @@ declare_list(T) *=>
 	(func (This:ptr, clear).method =>
 		free(capacity(@this));
 		free(this->items);
-		this->items = NULL
+		this->items = 'NULL'
 	);
 
 	(T:ptr func (This, at).method(size_t var id) =>
