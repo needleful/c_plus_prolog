@@ -1,17 +1,31 @@
 :- module(writer, [
-	write_file/2
+	write_file/2,
+	this_file/2
 ]).
 
+:- use_module(library(lists)).
 :- use_module(cpp_common).
 :- use_module(cpp_reader).
 :- use_module(cpp_ops).
 
+:- dynamic this_file/2.
+
 write_file(Terms, File) :-
+	retractall(this_file),
+	consult_files(Terms),
 	expand_macros(Terms, NewTerms),
 	setup_call_cleanup(
 		open(File, write, S, [encoding(utf8)]),
-		write_lines((S,""), NewTerms),
-		close(S)).
+		(	asserta(this_file(File, S)),
+			write_lines((S,""), NewTerms)
+		),
+		close(S)), !.
+
+consult_files([]).
+consult_files([:- consult(File)|X]) :-
+	consult(File),
+	consult_files(X).
+consult_files([_|X]) :- consult_files(X).
 
 expand_macros(Var, Var) :- var(Var).
 expand_macros('*=>'(_, _), '*=>').
@@ -55,9 +69,8 @@ indented_line((S,I), Term) :-
 	plain_line((S,I), Term),
 	nl(S).
 
-plain_line((S,I), (:- Directive)) :- !,
-	Directive =.. [Name| Args],
-	directive((S,I), Name, Args).
+plain_line(SS, (:- Directive)) :- !,
+	write_directive(SS, Directive).
 
 plain_line(_, '*=>').
 
@@ -154,6 +167,12 @@ block((S,I), Type, Block) :-
 	write(S, I),
 	write(S, "}").
 
+write_directive((S,I), Directive) :-
+	Directive =.. [Name| Args],
+	(	directive((S,I), Name, Args)
+	;	call(Directive)
+	;	format('WARNING: Directive failed: `~w`~n', [Directive])).
+
 directive(_, include, []).
 directive((S,I), include, [Name|Names]) :-
 	(	Name = local(LocalName)
@@ -161,7 +180,6 @@ directive((S,I), include, [Name|Names]) :-
 	;	format(S, "#include <~w.h>~n", [Name])
 	),
 	directive((S,I), include, Names).
-
 
 write_func_lines(SS, First;Next) :-
 	indented_line(SS, First),

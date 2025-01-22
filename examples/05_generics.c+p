@@ -1,7 +1,6 @@
 :- include(ctype, stdbool, stdio, stdlib, string).
 
 % Poor man's generics
-
 declare_list(int).
 declare_list(char:ptr).
 

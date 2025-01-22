@@ -1,66 +1,43 @@
 :- include(stdio).
 
+:- consult('examples/meta_library').
+
+inspect@
 struct position =>
 	float var (x, y).
 
+% Notice there's no `inspect@`
+struct size =>
+	float var (w, h).
+
 inspect@
 struct my_struct =>
-	int var a;
-	float var b;
-	position var p.
+	int var cars;
+	float var distance;
+	size var m_size;
+	position var pos.
 
 func main =>
 	my_struct var this = {
-		a = 12,
-		b = 12,
-		p = {x = 3, y = -1}	
+		cars = 12,
+		distance = 12,
+		m_size = {w = 100, h = 30},	
+		pos = {x = 3009.9, y = -13.2}	
 	};
-	forall((FType, FName): my_struct.fields) do (
-		printf("%s: ", nameof(FName));
-		print(FType, this.FName);
-		printf("\n")
-	).
+	print(my_struct, this).
 
+% We can't print unbound variables or they get instantiated,
+% and that breaks nested expansion.
 print(V, _) *=> V :- var(V), !, fail.
+print(Struct, S) *=>
+	printf("%s:\n", nameof(Struct));
+	forall((FType, FName): Struct.fields) do (
+		printf("\t%s: ", nameof(FName));
+		print(FType, S.FName);
+		printf("\n")
+	);
+	printf("end %s.\n", nameof(Struct))
+:-	(inspected_struct(Struct) *=> true).
 print(int, I) *=> printf("%d", I).
 print(float, F) *=> printf("%f", F).
-print(position, P) *=> printf("{%d, %d}", P.x, P.y).
-
-:- use_module(library(lists)).
-
-(inspect@ Decl => Body) *=> (Decl=>Body) :-
-	(strip_attrib(Decl) *=> struct Name),
-	format("Reflected struct: ~w", [Name]),
-	(var_tuples(Body, []) *=> FieldTuples),
-	assertz(Name.fields *=> FieldTuples).
-
-strip_attrib(_@ Body) *=> strip_attrib(Body).
-strip_attrib(Bare) *=> Bare.
-
-var_tuples(A;B, List) *=> Result :- 
-	(var_tuple(A, List) *=> List2),
-	(var_tuples(B, List2) *=> Result).
-var_tuples(Final, List) *=> var_tuple(Final, List).
-
-var_tuple(T var N, List) *=> List2 :-
-	(	atom(N),
-		R = [(T, N)]
-	;	N = (Name = _),
-		R = [(T, Name)]
-	;	N = (_,_),
-		(var_tuple_multi(T, N, []) *=> R)
-	),
-	append(List, R, List2).
-
-var_tuple_multi(T, (V,Next), List) *=> var_tuple_multi(T, Next, List2) :-
-	append(List, [(T, V)], List2).
-var_tuple_multi(T, V, List) *=> List2,
-	append(List, [(T, V)], List2).
-
-forall(Bind: List) do Body *=> statement_fold(S, NList) :-
-	findall(Body, member(Bind, List), [S|NList]).
-
-statement_fold(S, []) *=> S.
-statement_fold(S, [N|NList]) *=> statement_fold(S;N, NList).
-
-nameof(Exp) *=> String :- \+var(Exp), sformat(String, "~w", Exp).
+print(_, S) *=> printf("%s (can't print)", nameof(S)).

@@ -1,12 +1,15 @@
 :- module(cpp_reader, [
 	read_file/2,
-	'*=>'/2
+	'*=>'/2,
+	consult/1,
+	consulted/1
 ]).
 
 :- dynamic '*=>'/2.
+:- dynamic consulted/1.
 
-:- op(975,  fx,  return).
 :- op(1150, xfx, '*=>').
+:- op(975,  fx,  return).
 :- op(950,  xfy, then).
 :- op(950,  xfy, do).
 :- op(950,  xfy, else).
@@ -34,9 +37,16 @@
 :- op(110,  yf, []).
 
 read_file(Name, Terms) :-
-	retractall('*=>'(_,_)),
+	assert(consulted(Name)),
 	read_file_to_terms(Name, Terms, [module(cpp_reader)]),
 	find_macros(Terms).
+
+consult(Name) :- \+ consulted(Name),
+	(	atom(Name)
+	->	atom_concat(Name, '.c+p', Path)
+	;	Path = Name
+	),
+	read_file(Path, _).
 
 find_macros(Terms) :-
 	maplist(find_macro, Terms).
