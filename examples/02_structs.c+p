@@ -12,7 +12,7 @@ func print_struct(my_struct var ms) =>
 	printf("{a=%d, b=%d, c=%d\n}", ms.a, ms.b, ms.c).
 
 func main =>
-	my_struct var m1 = my_struct <- {12, 13, 16};
+	my_struct var m1 = {12, 13, 16} as my_struct;
 	my_struct var m2 = {a = 12, c = 32, b = 44};
 	print_struct(m1);
 	print_struct(m2).

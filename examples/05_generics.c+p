@@ -12,7 +12,7 @@ func main =>
 		(int:list, append).call(myInts, i*i)
 	);
 	for(int var i = 0; i < size; i+= 1) do (
-		printf("%d squared = %d.\n", i, @ (int:list, at).call(myInts, i))
+		printf("%d squared = %d.\n", i, (int:list, get).call(myInts, i))
 	).
 
 declare_list(T) *=>
@@ -22,21 +22,21 @@ declare_list(T) *=>
 
 	(size_t:ptr func (This, capacity).method =>
 		return this.items
-			then (size_t:ptr <- @this.items) - 2
+			then (@this.items as size_t:ptr) - 2
 			else 0
 	);
 
 	(size_t:ptr func (This, length).method =>
 		return this.items 
-			then (size_t:ptr <- @this.items) - 1
+			then (@this.items as size_t:ptr) - 1
 			else 0
 	);
 
 	(This func New =>
 		This var this;
-		this.items = T:ptr:ptr <- malloc(sizeof(T:ptr:ptr));
+		this.items = malloc(sizeof(T:ptr:ptr)) as T:ptr:ptr;
 		void:ptr var raw_data = malloc(sizeof(T)*capacity + sizeof(size_t)*2);
-		@ this.items = T:ptr <- & (size_t:ptr <- raw_data)[2];
+		@ this.items = & (raw_data as size_t:ptr)[2] as T:ptr;
 		@Capacity = capacity;
 		@Length = 0;
 		return this
@@ -44,9 +44,9 @@ declare_list(T) *=>
 
 	(func (This, resize).method(size_t var new_capacity) =>
 		void:ptr var raw_data = realloc(
-			void:ptr <- Capacity, 
+			Capacity as void:ptr, 
 			sizeof(T)*new_capacity + sizeof(size_t)*2);
-		@this.items = T:ptr <- &(size_t:ptr <- raw_data)[2];
+		@this.items = (raw_data as size_t:ptr) + 2 as T:ptr;
 		@Capacity = new_capacity
 	);
 
@@ -58,6 +58,10 @@ declare_list(T) *=>
 
 	(T:ptr func (This, at).method(size_t var id) =>
 		return @this.items+id
+	);
+
+	(T func (This, get).method(size_t var id) =>
+		return @ (This, at).call(this, id)
 	);
 
 	(func (This, append).method(T var item) =>
@@ -79,7 +83,7 @@ declare_list(T) *=>
 	(T func (This, pop).method =>
 		(!this.items or !@this.items or @Length =< 0) then (
 			puts("Error: Popped empty list.");
-			T var junk = T <- 0;
+			T var junk = 0 as T;
 			return junk
 		)
 		else (

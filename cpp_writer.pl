@@ -313,7 +313,7 @@ exp((S,I), then(Cond, else(IfThen, IfElse))) :-
 		write(S, " : "),
 		exp((S,I), IfElse))).
 
-exp((S,I), '<-'(Type, Exp)) :-
+exp((S,I), as(Exp, Type)) :-
 	in_parens(S, (
 		in_parens(S, 
 			type((S,I), Type)),
