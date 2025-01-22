@@ -26,9 +26,9 @@
 :- op(650,  xfx, var).
 :- op(610,  fx,  '&').
 :- op(400,  yfx, '/?').
-:- op(150, fx, !).
+:- op(150,  fx, !).
 :- op(120,  fx, @).
-:- op(110, yf, []).
+:- op(110,  yf, []).
 
 read_file(Name, Terms) :-
 	read_file_to_terms(Name, Terms, [module(cpp_reader)]).

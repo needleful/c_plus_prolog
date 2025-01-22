@@ -19,6 +19,7 @@ write_file(Terms, File) :-
 find_macros(Terms) :-
 	maplist(find_macro, Terms).
 
+find_macro(C) :- var(C), !, fail.
 find_macro('*=>'(A, B)) :- !,
 	assertz('*=>'(A, B)).
 find_macro('*=>'(A, B) :- C) :- !,
@@ -36,7 +37,7 @@ expand_macros('*=>'(_, _) :- _, '*=>').
 
 expand_macros(Term, NewTerm) :-
 	% Expand sub-items
-	(	atomic(Term),
+	(	(atomic(Term); var(Term)),
 		Term2 = Term,
 		!
 	;	is_list(Term),
@@ -51,7 +52,8 @@ expand_macros(Term, NewTerm) :-
 		!
 	),
 	% Apply Macros until they no longer apply
-	(	'*=>'(Term2, Term3)
+	(	\+ var(Term2),
+		'*=>'(Term2, Term3)
 	->	expand_macros(Term3, NewTerm)
 	;	NewTerm = Term2
 	).

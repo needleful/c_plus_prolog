@@ -1,0 +1,35 @@
+:- include(stdio).
+
+struct position =>
+	float var (x, y).
+
+struct my_struct =>
+	int var a;
+	float var b;
+	position var p.
+
+forall(Bind: List) do Body *=> NBody :-
+	findall(Body, member(Bind, List), [B|BodyList]),
+	foldl(';', BodyList, B, NBody).
+
+print(int, I) *=> printf("%d", I).
+print(float, F) *=> printf("%f", F).
+print(position, P) *=> printf("{%d, %d}", P.x, P.y).
+
+(view@ struct Name => Body) *=> (
+	(struct Name => Body)
+).
+
+func main =>
+	my_struct var this = {
+		a = 12,
+		b = 12,
+		p = {x = 3, y = -1}	
+	};
+	forall((FType, FName): [(int, a), (float, b), (position, p)]) do (
+		printf("%s: ", nameof(FName));
+		print(FType, this.FName);
+		printf("\n")
+	).
+
+nameof(Exp) *=> String :- sformat(String, "~w", Exp).
