@@ -3,22 +3,11 @@
 struct position =>
 	float var (x, y).
 
+inspect@
 struct my_struct =>
 	int var a;
 	float var b;
 	position var p.
-
-forall(Bind: List) do Body *=> NBody :-
-	findall(Body, member(Bind, List), [B|BodyList]),
-	foldl(';', BodyList, B, NBody).
-
-print(int, I) *=> printf("%d", I).
-print(float, F) *=> printf("%f", F).
-print(position, P) *=> printf("{%d, %d}", P.x, P.y).
-
-(view@ struct Name => Body) *=> (
-	(struct Name => Body)
-).
 
 func main =>
 	my_struct var this = {
@@ -26,10 +15,52 @@ func main =>
 		b = 12,
 		p = {x = 3, y = -1}	
 	};
-	forall((FType, FName): [(int, a), (float, b), (position, p)]) do (
+	forall((FType, FName): my_struct.fields) do (
 		printf("%s: ", nameof(FName));
 		print(FType, this.FName);
 		printf("\n")
 	).
 
-nameof(Exp) *=> String :- sformat(String, "~w", Exp).
+print(V, _) *=> V :- var(V), !, fail.
+print(int, I) *=> printf("%d", I).
+print(float, F) *=> printf("%f", F).
+print(position, P) *=> printf("{%d, %d}", P.x, P.y).
+
+:- use_module(library(lists)).
+
+(inspect@ Decl => Body) *=> (Decl=>Body) :-
+	(strip_attrib(Decl) *=> struct Name),
+	format("Reflected struct: ~w", [Name]),
+	(var_tuples(Body, []) *=> FieldTuples),
+	assertz(Name.fields *=> FieldTuples).
+
+strip_attrib(_@ Body) *=> strip_attrib(Body).
+strip_attrib(Bare) *=> Bare.
+
+var_tuples(A;B, List) *=> Result :- 
+	(var_tuple(A, List) *=> List2),
+	(var_tuples(B, List2) *=> Result).
+var_tuples(Final, List) *=> var_tuple(Final, List).
+
+var_tuple(T var N, List) *=> List2 :-
+	(	atom(N),
+		R = [(T, N)]
+	;	N = (Name = _),
+		R = [(T, Name)]
+	;	N = (_,_),
+		(var_tuple_multi(T, N, []) *=> R)
+	),
+	append(List, R, List2).
+
+var_tuple_multi(T, (V,Next), List) *=> var_tuple_multi(T, Next, List2) :-
+	append(List, [(T, V)], List2).
+var_tuple_multi(T, V, List) *=> List2,
+	append(List, [(T, V)], List2).
+
+forall(Bind: List) do Body *=> statement_fold(S, NList) :-
+	findall(Body, member(Bind, List), [S|NList]).
+
+statement_fold(S, []) *=> S.
+statement_fold(S, [N|NList]) *=> statement_fold(S;N, NList).
+
+nameof(Exp) *=> String :- \+var(Exp), sformat(String, "~w", Exp).

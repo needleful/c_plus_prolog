@@ -3,41 +3,23 @@
 ]).
 
 :- use_module(cpp_common).
+:- use_module(cpp_reader).
 :- use_module(cpp_ops).
 
-:- dynamic '*=>'/2.
-
 write_file(Terms, File) :-
-	retractall('*=>'(_,_)),
-	find_macros(Terms),
 	expand_macros(Terms, NewTerms),
 	setup_call_cleanup(
 		open(File, write, S, [encoding(utf8)]),
 		write_lines((S,""), NewTerms),
 		close(S)).
 
-find_macros(Terms) :-
-	maplist(find_macro, Terms).
-
-find_macro(C) :- var(C), !, fail.
-find_macro('*=>'(A, B)) :- !,
-	assertz('*=>'(A, B)).
-find_macro('*=>'(A, B) :- C) :- !,
-	assertz('*=>'(A, B) :- C).
-find_macro(_).
-
-write_lines(_, []).
-write_lines((S,I), [Term|Others]) :-
-	expand_macros(Term, NewTerm),
-	indented_line((S,I), NewTerm),
-	write_lines((S,I), Others).
-
+expand_macros(Var, Var) :- var(Var).
 expand_macros('*=>'(_, _), '*=>').
 expand_macros('*=>'(_, _) :- _, '*=>').
 
 expand_macros(Term, NewTerm) :-
 	% Expand sub-items
-	(	(atomic(Term); var(Term)),
+	(	atomic(Term),
 		Term2 = Term,
 		!
 	;	is_list(Term),
@@ -57,6 +39,12 @@ expand_macros(Term, NewTerm) :-
 	->	expand_macros(Term3, NewTerm)
 	;	NewTerm = Term2
 	).
+
+write_lines(_, []).
+write_lines((S,I), [Term|Others]) :-
+	expand_macros(Term, ETerm),
+	indented_line((S,I), ETerm),
+	write_lines((S,I), Others).
 
 indented_line(SS, A;B) :-
 	indented_line(SS, A),
@@ -221,9 +209,9 @@ var((S,I), Type, (Name,Names), Sep) :-
 var(SS, Type, Name, _) :-
 	single_var(SS, Type, Name).
 
-single_var(SS, (Base:Type):Sp, Name) :-
+single_var(SS, (Base:Type):Sp, Name) :- !,
 	single_var(SS, Base:Type:Sp, Name).
-single_var(SS, BaseType:Special, Name) :-
+single_var(SS, BaseType:Special, Name) :- !,
 	qual_type(SS, BaseType, false),
 	special_var(SS, Special, Name).
 single_var(SS, Type, []) :- !,
@@ -239,6 +227,7 @@ qual_type((S,_), ptr, CouldBePointer) :-
 	->	write(S, "*")
 	;	write(S, ptr)
 	).
+
 qual_type((S,_), Atom, _) :- atom(Atom),
 	write(S, Atom).
 qual_type((S,I), typeof(Exp), _) :-
@@ -253,6 +242,8 @@ qual_type((S,I), Type, CBP) :- Type =..[Qual,SubType],
 	write(S, Qual),
 	write(S, " "),
 	qual_type((S,I), SubType, CBP).
+qual_type(_, Type, _) :- !,
+	throw(error(domain_error('A valid C+P Type Term', Type), qual_type/3)).
 
 special_var(SS, (A:B):C,Name) :-
 	special_var(SS, A:B:C, Name).
@@ -274,6 +265,8 @@ special_var((S,I), Last, Name) :-
 	type_suffix(S, Last).
 
 type_prefix((S,_), ptr) :- write(S, "*").
+type_prefix(_, array).
+type_prefix(_, array(_)).
 type_prefix(SS, Qual) :- qual_type(SS, Qual, true).
 type_prefix(_,_).
 

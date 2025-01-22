@@ -1,6 +1,9 @@
 :- module(cpp_reader, [
-	read_file/2
+	read_file/2,
+	'*=>'/2
 ]).
+
+:- dynamic '*=>'/2.
 
 :- op(975,  fx,  return).
 :- op(1150, xfx, '*=>').
@@ -31,4 +34,16 @@
 :- op(110,  yf, []).
 
 read_file(Name, Terms) :-
-	read_file_to_terms(Name, Terms, [module(cpp_reader)]).
+	retractall('*=>'(_,_)),
+	read_file_to_terms(Name, Terms, [module(cpp_reader)]),
+	find_macros(Terms).
+
+find_macros(Terms) :-
+	maplist(find_macro, Terms).
+
+find_macro(C) :- var(C), !, fail.
+find_macro('*=>'(A, B)) :- !,
+	assertz('*=>'(A, B)).
+find_macro('*=>'(A, B) :- C) :- !,
+	assertz('*=>'(A, B) :- C).
+find_macro(_).
