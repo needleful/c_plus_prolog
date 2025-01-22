@@ -15,6 +15,7 @@ main(_) :-
 	write("Usage: cpp <in file> <out file>").
 
 compile(In, Out) :-
+	retractall(cpp_reader:custom_data(_)),
 	retractall(cpp_reader:consulted(_)),
 	retractall(cpp_reader:'*=>'(_,_)),
 	read_file(In, Terms),

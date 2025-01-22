@@ -1,12 +1,14 @@
 :- module(cpp_reader, [
 	read_file/2,
 	'*=>'/2,
+	custom_data/1,
 	consult/1,
 	consulted/1
 ]).
 
 :- dynamic '*=>'/2.
 :- dynamic consulted/1.
+:- dynamic custom_data/1.
 
 :- op(1150, xfx, '*=>').
 :- op(975,  fx,  return).

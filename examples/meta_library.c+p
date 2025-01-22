@@ -17,18 +17,16 @@ statement_fold(S, [N|NList]) *=> statement_fold(S;N, NList).
 % or the variable will get initialized early.
 nameof(Exp) *=> String :- \+var(Exp), sformat(String, "~w", Exp).
 
-% A tag to give you compile-time information about a struct
-% Used like `inspect@ struct my_struct`
-(inspect@ Decl => Body) *=> (Decl=>Body) :-
-	(strip_attrib(Decl) *=> struct Name),
+% A macro that returns the same syntax as before, but records the type info
+% uses a compiler-provided dynamic predicate custom_data/1.
+(struct Name => Body) *=> (struct Name => Body) :-
+	% Now we have to prevent this macro from running again
+	% otherwise it loops infinitely because the syntax is the same.
+	\+ custom_data(inspected_struct(Name)),
+	format("Inspecting: ~w~n", [Name]),
 	(var_tuples(Body, []) *=> FieldTuples),
-	asserta((inspected_struct(Name) *=> true :- !)),
+	assertz(custom_data(inspected_struct(Name))),
 	assertz(Name.fields *=> FieldTuples).
-
-inspected_struct(_) *=> false, !.
-
-strip_attrib(_@ Body) *=> strip_attrib(Body).
-strip_attrib(Bare) *=> Bare.
 
 var_tuples(A;B, List) *=> Result :- 
 	(var_tuple(A, List) *=> List2),
@@ -44,6 +42,8 @@ var_tuple(T var N, List) *=> List2 :-
 		(var_tuple_multi(T, N, []) *=> R)
 	),
 	append(List, R, List2).
+% Ignore anything that's not a variable.
+var_tuple(_, List) *=> List.
 
 var_tuple_multi(T, (V,Next), List) *=> var_tuple_multi(T, Next, List2) :-
 	!,

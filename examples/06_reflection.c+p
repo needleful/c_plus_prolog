@@ -1,16 +1,12 @@
 :- include(stdio).
-
 :- consult('examples/meta_library').
 
-inspect@
 struct position =>
 	float var (x, y).
 
-% Notice there's no `inspect@`
 struct size =>
 	float var (w, h).
 
-inspect@
 struct my_struct =>
 	int var cars;
 	float var distance;
@@ -29,15 +25,14 @@ func main =>
 % We can't print unbound variables or they get instantiated,
 % and that breaks nested expansion.
 print(V, _) *=> V :- var(V), !, fail.
+print(int, I) *=> printf("%d\n", I).
+print(float, F) *=> printf("%f\n", F).
 print(Struct, S) *=>
 	printf("%s:\n", nameof(Struct));
 	forall((FType, FName): Struct.fields) do (
 		printf("\t%s: ", nameof(FName));
-		print(FType, S.FName);
-		printf("\n")
+		print(FType, S.FName)
 	);
 	printf("end %s.\n", nameof(Struct))
-:-	(inspected_struct(Struct) *=> true).
-print(int, I) *=> printf("%d", I).
-print(float, F) *=> printf("%f", F).
-print(_, S) *=> printf("%s (can't print)", nameof(S)).
+:-	custom_data(inspected_struct(Struct)).
+print(_, S) *=> printf("%s (can't print)\n", nameof(S)).
