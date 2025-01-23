@@ -13,6 +13,4 @@ statement_fold(S, []) *=> S.
 statement_fold(S, [N|NList]) *=> statement_fold(S;N, NList).
 
 % Good old 'nameof'. Everybody needs it.
-% Various macros have to reject variables with \+var(X),
-% or the variable will get initialized early.
 nameof(Exp) *=> String :- \+var(Exp), sformat(String, "~w", Exp).

@@ -27,6 +27,57 @@ list[T] =>
 		@(list[T]:capacity(new_list)) = capacity;
 		@(list[T]:length(new_list)) = 0;
 		return new_list
+	);
+
+	(func list[T]:resize(list[T] var this, size_t var new_capacity) =>
+		void:ptr var raw_data = realloc(
+			list[T]:capacity(this) as void:ptr, 
+			sizeof(T)*new_capacity + sizeof(size_t)*2);
+		@this.items = (raw_data as size_t:ptr) + 2 as T:ptr;
+		@(list[T]:capacity(this)) = new_capacity
+	);
+
+	(func list[T]:clear(list[T]:ptr var this) =>
+		free(list[T]:capacity(@this));
+		free(this->items);
+		this->items = 'NULL'
+	);
+
+	(T:ptr func list[T]:at(list[T] var this, size_t var id) =>
+		return @this.items+id
+	);
+
+	(T func list[T]:get(list[T] var this, size_t var id) =>
+		return @(list[T]:at(this, id))
+	);
+
+	(func list[T]:append(list[T] var this, T var item) =>
+		!this.items then (
+			puts("Internal error. List was not allocated properly.");
+			return
+		)
+		else (!@this.items) then (
+			@this.items = @((list[T]:new(1)).items)
+		);
+		size_t var length = @(list[T]:length(this));
+		size_t var capacity = @(list[T]:capacity(this));
+		length >= capacity then 
+			list[T]:resize(this, capacity*2);
+		@(list[T]:at(this, length)) = item;
+		@(list[T]:length(this)) += 1
+	);
+
+	(T func list[T]:pop(list[T] var this) =>
+		(!this.items or !@this.items or @(list[T]:length(this)) =< 0) then (
+			puts("Error: Popped empty list.");
+			T var junk = 0 as T;
+			return junk
+		)
+		else (
+			size_t:ptr var l = list[T]:length(this);
+			@l -= 1;
+			return (@this.items)[@l]
+		)
 	).
 
 % We still need to declare the structs
@@ -36,11 +87,19 @@ declare(list[const(char):ptr]).
 strings *=> list[const(char):ptr].
 
 func main =>
-	list[int] var int_list = list[int]:new(10);
+	list[int] var int_list = list[int]:new(17);
 	strings var str_list = strings:new(10);
-	printf("Lists created with capacities %d and %d",
+	printf("Lists created with capacities %d and %d\n",
 		@(list[int]:capacity(int_list)),
-		@(strings:capacity(str_list))).
+		@(strings:capacity(str_list)));
+
+	size_t var size = @(list[int]:capacity(int_list));
+	for(int var i = 0; i < size; i += 1) do (
+		list[int]:append(int_list, i*i)
+	);
+	for(int var i = 0; i < size; i+= 1) do (
+		printf("%d squared = %d.\n", i, list[int]:get(int_list, i))
+	).
 
 % The templates macro. It generates no code.
 % Instead, it asserts a new macro in order to generate code for each declaration.
@@ -52,11 +111,13 @@ func main =>
 		declare(Name[Z]) *=> NewBody
 		:- (
 			ground(Z),
-			(mangled_name(Name[Z]) *=> ZName),
 			T=Z,
 			Body=NewBody,
+			(mangled_name(Name[Z]) *=> ZName),
 			assertz(Name[Z] *=> ZName),
 			assertz((ZName:Method *=> ZMethod :-
+				% Crudely hacking some shorthand for method names
+				Method \= ptr, Method \= array,
 				(	atom(Method)
 				->	MName = Method,
 					ZArgs = []
