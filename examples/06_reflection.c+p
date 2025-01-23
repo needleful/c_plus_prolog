@@ -27,6 +27,7 @@ func main =>
 print(V, _) *=> V :- var(V), !, fail.
 print(int, I) *=> printf("%d\n", I).
 print(float, F) *=> printf("%f\n", F).
+
 print(Struct, S) *=>
 	printf("%s:\n", nameof(Struct));
 	forall((FType, FName): Struct.fields) do (
@@ -35,4 +36,38 @@ print(Struct, S) *=>
 	);
 	printf("end %s.\n", nameof(Struct))
 :-	custom_data(inspected_struct(Struct)).
+
 print(_, S) *=> printf("%s (can't print)\n", nameof(S)).
+
+% A macro that returns the same syntax as before, but records the type info
+% uses a compiler-provided dynamic predicate custom_data/1.
+(struct Name => Body) *=> (struct Name => Body) :-
+	% Now we have to prevent this macro from running again
+	% otherwise it loops infinitely because the syntax is the same.
+	\+ custom_data(inspected_struct(Name)),
+	format("Inspecting: ~w~n", [Name]),
+	(var_tuples(Body, []) *=> FieldTuples),
+	assertz(custom_data(inspected_struct(Name))),
+	assertz(Name.fields *=> FieldTuples).
+
+var_tuples(A;B, List) *=> Result :- 
+	(var_tuple(A, List) *=> List2),
+	(var_tuples(B, List2) *=> Result).
+var_tuples(Final, List) *=> var_tuple(Final, List).
+
+var_tuple(T var N, List) *=> List2 :-
+	(	atom(N),
+		R = [(T, N)]
+	;	N = (Name = _),
+		R = [(T, Name)]
+	;	N = (_,_),
+		(var_tuple_multi(T, N, []) *=> R)
+	),
+	append(List, R, List2).
+% Ignore anything that's not a variable.
+var_tuple(_, List) *=> List.
+
+var_tuple_multi(T, (V,Next), List) *=> var_tuple_multi(T, Next, List2) :-
+	!,
+	append(List, [(T, V)], List2).
+var_tuple_multi(T, V, List) *=> var_tuple(T var V, List).

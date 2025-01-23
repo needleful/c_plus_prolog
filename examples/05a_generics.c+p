@@ -1,0 +1,86 @@
+:- include(ctype, stdbool, stdio, stdlib, string).
+:- consult('examples/meta_library').
+
+% Poor man's generics
+list[T] =>
+	(struct list[T] =>
+		T:ptr:ptr var items
+	);
+
+	(size_t:ptr func list[T]:capacity(list[T] var this) =>
+		return this.items
+			then (@this.items as size_t:ptr) - 2
+			else 0
+	);
+
+	(size_t:ptr func list[T]:length(list[T] var this) =>
+		return this.items 
+			then (@this.items as size_t:ptr) - 1
+			else 0
+	);
+
+	(list[T] func list[T]:new(size_t var capacity) =>
+		list[T] var new_list;
+		new_list.items = malloc(sizeof(T:ptr:ptr)) as T:ptr:ptr;
+		void:ptr var raw_data = malloc(sizeof(T)*capacity + sizeof(size_t)*2);
+		@new_list.items = & (raw_data as size_t:ptr)[2] as T:ptr;
+		@(list[T]:capacity(new_list)) = capacity;
+		@(list[T]:length(new_list)) = 0;
+		return new_list
+	).
+
+% We still need to declare the structs
+declare(list[int]).
+declare(list[const(char):ptr]).
+
+strings *=> list[const(char):ptr].
+
+func main =>
+	list[int] var int_list = list[int]:new(10);
+	strings var str_list = strings:new(10);
+	printf("Lists created with capacities %d and %d",
+		@(list[int]:capacity(int_list)),
+		@(strings:capacity(str_list))).
+
+% The templates macro. It generates no code.
+% Instead, it asserts a new macro in order to generate code for each declaration.
+% The generating macro itself asserts macros for renaming things.
+(Name[T] => Body) *=> Comment :-
+	atom_concat('//Defined template type: ', Name, Comment),
+	\+ground(T), atom(Name),
+	assertz(
+		declare(Name[Z]) *=> NewBody
+		:- (
+			ground(Z),
+			(mangled_name(Name[Z]) *=> ZName),
+			T=Z,
+			Body=NewBody,
+			assertz(Name[Z] *=> ZName),
+			assertz((ZName:Method *=> ZMethod :-
+				(	atom(Method)
+				->	MName = Method,
+					ZArgs = []
+				;	Method =.. [MName|ZArgs]
+				),
+				(mangled_name(ZName:MName) *=> MZ_Name),
+				ZMethod =.. [MZ_Name|ZArgs]
+			))
+		)).
+
+mangled_name(Type) *=> Renamed :-
+	(unfold_type(Type) *=> TypeList),
+	atomic_list_concat(TypeList, '_', Renamed).
+
+unfold_type(A) *=> [A] :- atom(A), !.
+unfold_type(A:B) *=> AB :- !,
+	(unfold_type(A) *=> AL),
+	(unfold_type(B) *=> BL),
+	A \= [], B \= [],
+	append(AL, BL, AB).
+unfold_type(Name[T]) *=> NT :- !,
+	(unfold_type(Name:T:gen) *=> NT).
+unfold_type(Fn) *=> QA :- Fn =.. [Q,A], !,
+	(unfold_type(Q:A) *=> QA).
+unfold_type(C) *=> invalid_type(C) :- !,
+	writer:this_file(F, _),
+	format("ERROR: Invalid Type: `~w` [~w]~n", [C, F]).

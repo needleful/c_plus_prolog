@@ -1,101 +1,95 @@
 :- include(ctype, stdbool, stdio, stdlib, string).
 
 % Poor man's generics
-declare_list(int).
-declare_list(char:ptr).
+struct int:list.
+struct char:ptr:list.
 
 func main =>
 	int var size = 12;
-	int:list var myInts = (int:list, new).call(size);
+	int:list var myInts = int:list.new(size);
 	for(int var i = 0; i < size; i += 1) do (
-		(int:list, append).call(myInts, i*i)
+		int:list.append(myInts, i*i)
 	);
 	for(int var i = 0; i < size; i+= 1) do (
-		printf("%d squared = %d.\n", i, (int:list, get).call(myInts, i))
+		printf("%d squared = %d.\n", i, int:list.get(myInts, i))
 	).
 
-declare_list(T) *=>
-	(struct This =>
-		T:ptr:ptr var items
-	);
+struct T:list =>
+	T:ptr:ptr var items;
 
-	(size_t:ptr func (This, capacity).method =>
+	(size_t:ptr func capacity =>
 		return this.items
 			then (@this.items as size_t:ptr) - 2
 			else 0
 	);
 
-	(size_t:ptr func (This, length).method =>
+	(size_t:ptr func length =>
 		return this.items 
 			then (@this.items as size_t:ptr) - 1
 			else 0
 	);
 
-	(This func New =>
-		This var this;
+	(static@ 
+	T:list func new(size_t var capacity) =>
+		T:list var this;
 		this.items = malloc(sizeof(T:ptr:ptr)) as T:ptr:ptr;
 		void:ptr var raw_data = malloc(sizeof(T)*capacity + sizeof(size_t)*2);
-		@ this.items = & (raw_data as size_t:ptr)[2] as T:ptr;
-		@Capacity = capacity;
-		@Length = 0;
+		@this.items = & (raw_data as size_t:ptr)[2] as T:ptr;
+		@T:list.capacity(this) = capacity;
+		@T:list.length(this) = 0;
 		return this
 	);
 
-	(func (This, resize).method(size_t var new_capacity) =>
+	(func resize(size_t var new_capacity) =>
 		void:ptr var raw_data = realloc(
-			Capacity as void:ptr, 
+			T:list.capacity(this) as void:ptr, 
 			sizeof(T)*new_capacity + sizeof(size_t)*2);
 		@this.items = (raw_data as size_t:ptr) + 2 as T:ptr;
-		@Capacity = new_capacity
+		@T:list.capacity(this) = new_capacity
 	);
 
-	(func (This:ptr, clear).method =>
-		free((This, capacity).call(@this));
+	(func clear =>
+		free(T:list.capacity(@this));
 		free(this->items);
 		this->items = 'NULL'
 	);
 
-	(T:ptr func (This, at).method(size_t var id) =>
+	(T:ptr func at(size_t var id) =>
 		return @this.items+id
 	);
 
-	(T func (This, get).method(size_t var id) =>
-		return @ (This, at).call(this, id)
+	(T func get(size_t var id) =>
+		return @T:list.at(this, id)
 	);
 
-	(func (This, append).method(T var item) =>
+	(func append(T var item) =>
 		!this.items then (
 			puts("Internal error. List was not allocated properly.");
 			return
 		)
 		else (!@this.items) then (
-			@this.items = @ (This, new).call(1).items
+			@this.items = @T:list.new(1).items
 		);
-		size_t var length = @Length;
-		size_t var capacity = @Capacity;
+		size_t var length = @T:list.length(this);
+		size_t var capacity = @T:list.capacity(this);
 		length >= capacity then 
-			(This, resize).call(this, capacity*2);
-		@ (This, at).call(this, length) = item;
-		@Length += 1
+			T:list.resize(this, capacity*2);
+		@T:list.at(this, length) = item;
+		@T:list.length(this) += 1
 	);
 
-	(T func (This, pop).method =>
-		(!this.items or !@this.items or @Length =< 0) then (
+	(T func pop =>
+		(!this.items or !@this.items or @T:list.length(this) =< 0) then (
 			puts("Error: Popped empty list.");
 			T var junk = 0 as T;
 			return junk
 		)
 		else (
-			size_t:ptr var l = Length;
+			size_t:ptr var l = T:list.length(this);
 			@l -= 1;
 			return (@this.items)[@l]
 		)
-	)
-:-	(T:list *=> This), 
-	(method_name(This, new) *=> NewName), 
-	New =.. [NewName, size_t var capacity],
-	((This, capacity).call(this) *=> Capacity),
-	((This, length).call(this) *=> Length).
+	).
 
 T:list *=> ListType :-
 	(mangled_name(T) *=> MT),

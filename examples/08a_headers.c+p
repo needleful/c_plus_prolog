@@ -1,0 +1,17 @@
+:- include(stdio).
+:- export(test_headers, [
+	struct this_struct,
+	func this_func,
+	var this_var
+]).
+
+struct this_struct =>
+	int var (a, b).
+
+this_struct var this_var = {a=1, b=2}.
+
+int func this_func(this_struct s) =>
+	printf("this func: %d\n", add(s.a, s.b)).
+
+% Not exported to the header
+int func add(int var (a, b)) => return a+b.

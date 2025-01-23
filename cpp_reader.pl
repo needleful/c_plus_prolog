@@ -32,6 +32,7 @@
 :- op(650,  fx,  union).
 :- op(650,  fx,  enum).
 :- op(650,  xfx, var).
+:- op(650,  fx, var).
 :- op(610,  fx,  '&').
 :- op(400,  yfx, '/?').
 :- op(150,  fx, !).
