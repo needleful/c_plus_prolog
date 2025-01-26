@@ -26,8 +26,6 @@ module('08a_headers')
 	}
 }.
 
-:- consult('examples/meta_library').
-
 module(Name) {Body} *=> NewBody :-
 	this_file(Path, _),
 	(	atom_concat(_, '.h', Path)

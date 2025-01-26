@@ -5,7 +5,6 @@ struct my_struct
 	int var a, b, c
 }.
 
-
 union my_union {
 	int var integer;
 	float var real_num;

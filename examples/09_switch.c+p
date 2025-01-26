@@ -3,19 +3,32 @@
 func main {
 	puts("How many chickens do you have?");
 	char:ptr var line = 'NULL';
-	size_t var line_len;
-	size_t var len = getline(&line, &line_len, stdin);
-	int var chickens = atoi(line);
-	switch(chickens) {
-		0 => puts("No chickens? How sad!");
-		1 => puts("A single one? That's no way to live life.");
-		2, 3, 4, 5 =>
-			puts("Alright, you've got a few. That's good.");
-		6 =>
-			puts("Six is my lucky number!")
-			goto(default);
-		default =>
-			puts("Alright, you have quite a few chickens, actually")
+	while(true)
+	{
+		size_t var line_len;
+		size_t var len = getline(&line, &line_len, stdin);
+		int var chickens = atoi(line);
+		switch(chickens) {
+			0 {
+				puts("No chickens? How sad!");
+				goto(failure)
+			};
+			1 {
+				puts("A single one? That's no way to live life.");
+			};
+			2, 3, 4, 5 {
+				puts("Alright, you've got a few. That's good.");
+			};
+			6 {
+				puts("Six is my lucky number!")
+				goto(default);
+			};
+			default {
+				puts("Alright, you have quite a few chickens, actually")
+			}
+		}
 	};
-	free(line)
+	label(failure) {
+		free(line)
+	}
 }.
