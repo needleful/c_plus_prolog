@@ -37,7 +37,7 @@
 :- op(610,  fx,  '&').
 :- op(400,  yfx, '/?').
 :- op(150,  fx, !).
-:- op(120,  fx, @).
+:- op(105,  fx, *).
 :- op(110,  yf, []).
 
 read_file(Name, Terms) :-

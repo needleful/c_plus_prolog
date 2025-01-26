@@ -46,6 +46,7 @@ c_op(';',	control).
 
 c_op('.',	access).
 c_op('->',	access).
+c_op('*',	access).
 
 c_type_block(enum).
 c_type_block(struct).
@@ -59,4 +60,3 @@ op_rename('/?', '%').
 op_rename('or', '||').
 op_rename('and', '&&').
 op_rename('=<', '<=').
-op_rename('@', '*').

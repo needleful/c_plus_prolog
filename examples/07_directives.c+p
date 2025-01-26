@@ -1,12 +1,12 @@
 
 % Let's leave some comments in the C source
-comment @ Comment *=> (
+comment: Comment *=> (
 	% If a directive isn't recognized (such as :- include(...)),
 	% it's executed directly by the compiler.
 	:- this_file(F, S), format(S, "//~w [~w]~n", [Comment, F])
 ).
 
-comment @ "I can leave messages for myself".
+comment: "I can leave messages for myself".
 
 int func main
 {
