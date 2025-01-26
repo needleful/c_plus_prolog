@@ -44,8 +44,8 @@
 
 read_file(Name, Terms) :-
 	assert(consulted(Name)),
-	read_file_to_terms(Name, Terms, [module(cpp_reader)]),
-	find_macros(Terms).
+	read_file_to_terms(Name, InTerms, [module(cpp_reader)]),
+	find_macros(InTerms, Terms).
 
 consult(Name) :- \+ consulted(Name),
 	(	atom(Name)
@@ -54,12 +54,15 @@ consult(Name) :- \+ consulted(Name),
 	),
 	read_file(Path, _).
 
-find_macros(Terms) :-
-	maplist(find_macro, Terms).
+find_macros([], []).
+find_macros([M|Terms], Result) :-
+	(	find_macro(M)
+	->	find_macros(Terms, Result)
+	;	find_macros(Terms, Next),
+		Result = [M|Next]
+	).
 
-find_macro(C) :- var(C), !, fail.
 find_macro('*=>'(A, B)) :- !,
 	assertz('*=>'(A, B)).
 find_macro('*=>'(A, B) :- C) :- !,
 	assertz('*=>'(A, B) :- C).
-find_macro(_).

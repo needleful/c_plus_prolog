@@ -26,8 +26,6 @@ consult_files([:- consult(File)|X]) :-
 consult_files([_|X]) :- consult_files(X).
 
 expand_macros(Var, Var) :- var(Var).
-expand_macros('*=>'(_, _), '*=>').
-expand_macros('*=>'(_, _) :- _, '*=>').
 
 expand_macros(Term, NewTerm) :-
 	% Expand sub-items
@@ -57,8 +55,6 @@ write_lines((S,I), [Term|Others]) :-
 	expand_macros(Term, ETerm),
 	indented_line((S,I), ETerm),
 	write_lines((S,I), Others).
-
-indented_line(_, *=>).
 
 indented_line(SS, A;B) :-
 	indented_line(SS, A),
