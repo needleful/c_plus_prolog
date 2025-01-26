@@ -24,7 +24,7 @@ gcc -Wall ./output/07_directives.c -o ./output/07_directives.out
 
 echo "Running code..."
 ./output/00_hello_world.out
-./output/01_functions.out
+./output/01_functions.out 3 4
 ./output/02_structs.out
 ./output/03_parser.out
 ./output/04_macros.out

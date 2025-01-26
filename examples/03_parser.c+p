@@ -33,3 +33,7 @@ struct item
 	type var type
 }.
 
+int func main
+{
+	return 0
+}.

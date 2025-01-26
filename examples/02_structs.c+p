@@ -14,7 +14,7 @@ union my_union {
 
 func print_struct(my_struct var ms)
 {
-	printf("{a=%d, b=%d, c=%d\n}", ms.a, ms.b, ms.c)
+	printf("{a=%d, b=%d, c=%d}\n", ms.a, ms.b, ms.c)
 }.
 
 int func main {
