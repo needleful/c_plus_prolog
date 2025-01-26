@@ -3,12 +3,14 @@
 	'*=>'/2,
 	custom_data/1,
 	consult/1,
-	consulted/1
+	consulted/1,
+	this_file/2
 ]).
 
 :- dynamic '*=>'/2.
 :- dynamic consulted/1.
 :- dynamic custom_data/1.
+:- dynamic this_file/2.
 
 :- op(1150, xfx, '*=>').
 :- op(975,  fx,  return).

@@ -1,14 +1,11 @@
 :- module(writer, [
-	write_file/2,
-	this_file/2
+	write_file/2
 ]).
 
 :- use_module(library(lists)).
 :- use_module(cpp_common).
 :- use_module(cpp_reader).
 :- use_module(cpp_ops).
-
-:- dynamic this_file/2.
 
 write_file(Terms, File) :-
 	retractall(this_file),
@@ -19,7 +16,8 @@ write_file(Terms, File) :-
 		(	asserta(this_file(File, S)),
 			write_lines((S,""), NewTerms)
 		),
-		close(S)), !.
+		close(S)
+	), !.
 
 consult_files([]).
 consult_files([:- consult(File)|X]) :-
@@ -39,11 +37,11 @@ expand_macros(Term, NewTerm) :-
 	;	is_list(Term),
 		!, 
 		maplist(expand_macros, Term, Term2)
-	;	Term =..[Fn|Args],
+	;	compound_name_arguments(Term, Fn, Args),
 		!,
 		expand_macros(Fn, NewFn),
 		expand_macros(Args, NewArgs),
-		Term2 =.. [NewFn|NewArgs]
+		compound_name_arguments(Term2, NewFn, NewArgs)
 	;	Term2 = Term,
 		!
 	),
@@ -96,7 +94,7 @@ plain_line((S,_), Atom) :- atom(Atom),
 	% taking zero arguments.
 	(	c_standalone(Atom)
 	->	write(S, ";")
-	;	write(S, "();")
+	;	true
 	).
 
 plain_line((S,I), {}(Val)) :-
@@ -116,6 +114,9 @@ plain_line(_, Unknown) :- !,
 		[Unknown, [character_escapes(true), quoted(true)]]),
 	fail.
 
+block_head((S, _), A) :- atom(A), !,
+	write(S, A).
+
 block_head((S,I), func(Name)) :-
 	block_head((S,I), func(void, Name)).
 
@@ -124,17 +125,17 @@ block_head((S,I), func(Type, Fn)) :-
 	write(S, " "),
 	(	atom(Fn)
 	->	format(S, "~w()", [Fn])
-	;	Fn =.. [Name|Args],
+	;	compound_name_arguments(Fn, Name, Args),
 		write(S, Name),
 		in_parens(S,
 			args((S,I), Args))
 	).
 
-block_head((S,_), Head) :- Head =.. [Type, Name],
+block_head((S,_), Head) :- compound_name_arguments(Head, Type, [Name]),
 	c_type_block(Type), !,
 	format(S, "typedef ~w ~w_t", [Type, Name]).
 
-block_head((S, I), Head) :- Head =.. [Type, Exp],
+block_head((S, I), Head) :- compound_name_arguments(Head, Type, [Exp]),
 	format(S, "~w ", [Type]),
 	in_parens(S,
 		exp((S,I), Exp)).
@@ -142,8 +143,9 @@ block_head((S, I), Head) :- Head =.. [Type, Exp],
 block_head((S,_), Head) :- c_type_block(Head),
 	write(S, Head). 
 
+block_tail(_, Head) :- atom(Head).
 block_tail((S,_), Head) :-
-	Head =.. [Type, Name],
+	compound_name_arguments(Head, Type, [Name]),
 	c_type_block(Type),
 	format(S, " ~w;", Name).
 block_tail(_,_).
@@ -160,7 +162,7 @@ block((S,I), Type, Block) :-
 	write(S, "}").
 
 write_directive((S,I), Directive) :-
-	Directive =.. [Name| Args],
+	compound_name_arguments(Directive, Name,  Args),
 	(	directive((S,I), Name, Args)
 	;	call(Directive)
 	;	format('WARNING: Directive failed: `~w`~n', [Directive])).
@@ -237,7 +239,6 @@ qual_type((S,_), ptr, CouldBePointer) :-
 	->	write(S, "*")
 	;	write(S, ptr)
 	).
-
 qual_type((S,_), Atom, _) :- atom(Atom),
 	write(S, Atom).
 qual_type((S,I), typeof(Exp), _) :-
@@ -248,7 +249,7 @@ qual_type(SS, atomic(Type), CBP) :-
 	qual_type(SS, '_Atomic'(Type), CBP).
 qual_type(SS, {}(Body, Head), _) :-
 	plain_line(SS, {}(Body, Head)).
-qual_type((S,I), Type, CBP) :- Type =..[Qual,SubType],
+qual_type((S,I), Type, CBP) :- Type =.. [Qual,SubType],
 	write(S, Qual),
 	write(S, " "),
 	qual_type((S,I), SubType, CBP).
@@ -280,7 +281,7 @@ type_prefix(_, array(_)).
 type_prefix(SS, Qual) :- qual_type(SS, Qual, true).
 type_prefix(_,_).
 
-type_suffix((S,_), array) :- write(S, "[]").
+type_suffix(S, array) :- write(S, "[]").
 type_suffix(S, array(Len)) :- format(S, "[~w]", [Len]).
 type_suffix(_, _).
 
@@ -329,7 +330,7 @@ exp((S,I), {Val}) :-
 	struct_literal((S,I), Val),
 	write(S, "}").
 
-exp((S,I), Fn) :- Fn =.. [Name|Args],
+exp((S,I), Fn) :- compound_name_arguments(Fn, Name, Args),
 	cpp_functor((S,I), Name, Args).
 
 struct_literal((S,I), (A,B)) :-

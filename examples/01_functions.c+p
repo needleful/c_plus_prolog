@@ -12,21 +12,21 @@ func nop
 
 func even_check(int var x)
 {
-	nop;
+	nop();
 	printf("%d is %s\n", x,
 		x /? 2 then "odd" else "even")
 }.
 
-int func main(int var argc, char:ptr:ptr var argv)
+int func main(int var argc, char:ptr:array var argv)
 {
 	if(argc < 3)
 	{
 		printf("Usage: `%s <number> <number>`\n", argv[0]); 
 		return 1
 	};
-	int var (
+	int var 
 		a = atoi(argv[1]),
-		b = atoi(argv[2]));
+		b = atoi(argv[2]);
 	even_check(a);
 	even_check(b);
 	printf("%d + %d = %d!\n", a, b, add(a,b));

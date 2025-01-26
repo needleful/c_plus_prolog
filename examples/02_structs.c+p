@@ -2,7 +2,7 @@
 
 struct my_struct
 {
-	int var (a, b, c)
+	int var a, b, c
 }.
 
 

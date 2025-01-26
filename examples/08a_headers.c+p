@@ -1,24 +1,54 @@
-:- include(stdio).
-:- export(test_headers, [
-	struct this_struct,
-	func this_func,
-	var this_var
-]).
-
-struct this_struct
+private
 {
-	int var (a, b)
+	:- include(stdio)
 }.
 
-this_struct var this_var = {a=1, b=2}.
-
-int func this_func(this_struct s)
+module(header08)
 {
-	printf("this func: %d\n", add(s.a, s.b))
+	(:- include(stdint));
+
+	struct this_struct
+	{
+		int32_t var (a, b)
+	};
+
+	this_struct var this_var = {a=1, b=2};
+
+	int32_t func this_func(this_struct var s)
+	{
+		printf("this func: %d\n", add(s.a, s.b))
+	}
 }.
 
-% Not exported to the header
-int func add(int var (a, b))
-{
-	return a+b
+private {
+	int32_t func add(int32_t var (a, b))
+	{
+		return a+b
+	}
 }.
+
+:- consult('examples/meta_library').
+
+module(Name) {Body} *=> NewBody :-
+	this_file(Path, Stream),
+	(	atom_concat(_, '.h', Path)
+	->	(module_header(Name, Stream) {Body} *=> NewBody)
+	;	(module_body(Name, Stream){Body} *=> NewBody)
+	).
+
+module_header(Name, Stream) {Body} *=>
+	\+ ['#ifndef ', Name, '_h'];
+	\+ ['#define ', Name, '_h'];
+	Body;
+	\+ ['#endif //', Name, '_h'].
+
+private {Body} *=> NewBody :-
+	this_file(Path, Stream),
+	(	atom_concat(_, '.c', Path)
+	->	NewBody = Body
+	;	NewBody = '//Removed'
+	).
+
+
+\+ Atoms *=> Concat :-
+	atomic_list_concat(Atoms, Concat).

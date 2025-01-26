@@ -11,6 +11,9 @@ swipl -s cpp.pl -- ./examples/04_macros.c+p ./output/04_macros.c
 swipl -s cpp.pl -- ./examples/05_generics.c+p ./output/05_generics.c
 swipl -s cpp.pl -- ./examples/06_reflection.c+p ./output/06_reflection.c
 swipl -s cpp.pl -- ./examples/07_directives.c+p ./output/07_directives.c
+swipl -s cpp.pl -- ./examples/08a_headers.c+p ./output/08a_headers.c
+swipl -s cpp.pl -- ./examples/08a_headers.c+p ./output/08a_headers.h
+swipl -s cpp.pl -- ./examples/08b_headers.c+p ./output/08b_headers.c
 
 echo "Compiling C..."
 gcc -Wall ./output/00_hello_world.c -o ./output/00_hello_world.out

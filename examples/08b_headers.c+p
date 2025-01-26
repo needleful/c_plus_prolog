@@ -1,0 +1,7 @@
+:- include(local('08a_headers')).
+
+int func main {
+	this_struct var ms = {a = 1, b = 200};
+	this_func(ms);
+	this_func(this_var)
+}.
