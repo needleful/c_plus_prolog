@@ -45,8 +45,8 @@ list[T]
 	func list[T]:clear(list[T]:ptr var this)
 	{
 		free(list[T]:capacity(*this));
-		free(this->items);
-		this->items = 'NULL'
+		free(this@items);
+		this@items = 'NULL'
 	};
 
 	T:ptr func list[T]:at(list[T] var this, size_t var id)
