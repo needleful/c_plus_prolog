@@ -37,10 +37,11 @@ print(float, F) *=> printf("%f\n", F).
 
 print(Struct, S) *=>
 	printf("%s:\n", nameof(Struct));
-	forall((FType, FName): Struct.fields) do (
+	forall((FType, FName): Struct.fields)
+	{
 		printf("\t%s: ", nameof(FName));
 		print(FType, S.FName)
-	);
+	};
 	printf("end %s.\n", nameof(Struct))
 :-	custom_data(inspected_struct(Struct)).
 

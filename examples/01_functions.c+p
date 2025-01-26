@@ -10,13 +10,15 @@ func nop
 	return
 }.
 
-func even_check(int var x){
+func even_check(int var x)
+{
 	nop;
 	printf("%d is %s\n", x,
 		x /? 2 then "odd" else "even")
 }.
 
-int func main(int var argc, char:ptr:ptr var argv){
+int func main(int var argc, char:ptr:ptr var argv)
+{
 	if(argc < 3)
 	{
 		printf("Usage: `%s <number> <number>`\n", argv[0]); 

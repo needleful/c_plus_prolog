@@ -13,7 +13,6 @@
 :- op(1150, xfx, '*=>').
 :- op(975,  fx,  return).
 :- op(950,  xfy, then).
-:- op(950,  xfy, do).
 :- op(950,  xfy, else).
 :- op(800,  yfx, or).
 :- op(750,  yfx, and).

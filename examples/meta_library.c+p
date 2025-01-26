@@ -5,7 +5,7 @@
 % forall(Name: [a, b, c]) do (Name += 1).
 % It only runs on terms that exist in the list,
 % so it's ripe with opportunity to do some horrible things.
-forall(Bind: List) do Body *=> statement_fold(S, NList) :-
+forall(Bind: List) {Body} *=> statement_fold(S, NList) :-
 	findall(Body, member(Bind, List), [S|NList]).
 
 % Turn a Prolog list into C statements
