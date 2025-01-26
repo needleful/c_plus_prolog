@@ -26,6 +26,7 @@
 :- op(700,  xfx, ^=).
 :- op(690,  yfx, as).
 :- op(675,  yfx, @).
+:- op(660,  yf, {}).
 :- op(650,  xfx, func).
 :- op(650,  fx,  func).
 :- op(650,  fx,  struct).

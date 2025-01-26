@@ -2,29 +2,34 @@
 
 % Some types from a lisp parser
 
-enum type =>
+enum type
+{
 	type_NIL;
 	type_SYMBOL;
 	type_BOOL;
 	type_INT;
 	type_FLOAT;
 	type_LIST;
-	type_TEXT.
+	type_TEXT
+}.
 
 struct item.
 
-struct list => item:ptr:ptr var items.
+struct list { item:ptr:ptr var items}.
 
-struct span => int var (start, length).
+struct span {int var (start, length)}.
 
-struct item =>
-	((union) =>
+struct item
+{
+	(union
+	{
 		list var list;
 		char:ptr var text;
 		long var integer;
 		double var real;
 		unsigned(long) var uinteger
-	) var data;
+	}) var data;
 	span var span;
-	type var type.
+	type var type
+}.
 

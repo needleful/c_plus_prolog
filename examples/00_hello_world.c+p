@@ -1,3 +1,7 @@
 :- include(stdio).
 
-func main => puts("Hello, world!").
+int func main
+{ 
+	puts("Hello, world!");
+	return 0
+}.

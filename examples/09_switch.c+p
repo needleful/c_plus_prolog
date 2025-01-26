@@ -1,12 +1,12 @@
 :- include(stdio).
 
-func main =>
+func main {
 	puts("How many chickens do you have?");
 	char:ptr var line = 'NULL';
 	size_t var line_len;
 	size_t var len = getline(&line, &line_len, stdin);
 	int var chickens = atoi(line);
-	chickens switch (
+	switch(chickens) {
 		0 -> puts("No chickens? How sad!");
 		1 -> puts("A single one? That's no way to live life.");
 		2, 3, 4, 5 ->
@@ -16,5 +16,6 @@ func main =>
 			-> default;
 		default ->
 			puts("Alright, you have quite a few chickens, actually")
-	);
-	free(line).
+	};
+	free(line)
+}.

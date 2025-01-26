@@ -8,5 +8,7 @@ comment @ Comment *=> (
 
 comment @ "I can leave messages for myself".
 
-int func main =>
-	return 0.
+int func main
+{
+	return 0
+}.

@@ -2,24 +2,28 @@
 :- consult('examples/meta_library').
 
 % Poor man's generics
-list[T] =>
-	(struct list[T] =>
+list[T]
+{
+	struct list[T] {
 		T:ptr:ptr var items
-	);
+	};
 
-	(size_t:ptr func list[T]:capacity(list[T] var this) =>
+	size_t:ptr func list[T]:capacity(list[T] var this)
+	{
 		return this.items
 			then (@this.items as size_t:ptr) - 2
 			else 0
-	);
+	};
 
-	(size_t:ptr func list[T]:length(list[T] var this) =>
+	size_t:ptr func list[T]:length(list[T] var this)
+	{
 		return this.items 
 			then (@this.items as size_t:ptr) - 1
 			else 0
-	);
+	};
 
-	(list[T] func list[T]:new(size_t var capacity) =>
+	list[T] func list[T]:new(size_t var capacity)
+	{
 		list[T] var new_list;
 		new_list.items = malloc(sizeof(T:ptr:ptr)) as T:ptr:ptr;
 		void:ptr var raw_data = malloc(sizeof(T)*capacity + sizeof(size_t)*2);
@@ -27,58 +31,70 @@ list[T] =>
 		@(list[T]:capacity(new_list)) = capacity;
 		@(list[T]:length(new_list)) = 0;
 		return new_list
-	);
+	};
 
-	(func list[T]:resize(list[T] var this, size_t var new_capacity) =>
+	func list[T]:resize(list[T] var this, size_t var new_capacity)
+	{
 		void:ptr var raw_data = realloc(
 			list[T]:capacity(this) as void:ptr, 
 			sizeof(T)*new_capacity + sizeof(size_t)*2);
 		@this.items = (raw_data as size_t:ptr) + 2 as T:ptr;
 		@(list[T]:capacity(this)) = new_capacity
-	);
+	};
 
-	(func list[T]:clear(list[T]:ptr var this) =>
+	func list[T]:clear(list[T]:ptr var this)
+	{
 		free(list[T]:capacity(@this));
 		free(this->items);
 		this->items = 'NULL'
-	);
+	};
 
-	(T:ptr func list[T]:at(list[T] var this, size_t var id) =>
+	T:ptr func list[T]:at(list[T] var this, size_t var id)
+	{
 		return @this.items+id
-	);
+	};
 
-	(T func list[T]:get(list[T] var this, size_t var id) =>
+	T func list[T]:get(list[T] var this, size_t var id)
+	{
 		return @(list[T]:at(this, id))
-	);
+	};
 
-	(func list[T]:append(list[T] var this, T var item) =>
-		!this.items then (
+	func list[T]:append(list[T] var this, T var item)
+	{
+		if(!this.items)
+		{
 			puts("Internal error. List was not allocated properly.");
 			return
-		)
-		else (!@this.items) then (
+		}
+		else if(!@this.items)
+		{
 			@this.items = @((list[T]:new(1)).items)
-		);
+		};
 		size_t var length = @(list[T]:length(this));
 		size_t var capacity = @(list[T]:capacity(this));
-		length >= capacity then 
-			list[T]:resize(this, capacity*2);
+		if(length >= capacity)
+		{
+			list[T]:resize(this, capacity*2)
+		};
 		@(list[T]:at(this, length)) = item;
 		@(list[T]:length(this)) += 1
-	);
+	};
 
-	(T func list[T]:pop(list[T] var this) =>
-		(!this.items or !@this.items or @(list[T]:length(this)) =< 0) then (
+	T func list[T]:pop(list[T] var this)
+	{
+		if(!this.items or !@this.items or @(list[T]:length(this)) =< 0)
+		{
 			puts("Error: Popped empty list.");
 			T var junk = 0 as T;
 			return junk
-		)
-		else (
+		}
+		else {
 			size_t:ptr var l = list[T]:length(this);
 			@l -= 1;
 			return (@this.items)[@l]
-		)
-	).
+		}
+	}
+}.
 
 % We still need to declare the structs
 declare(list[int]).
@@ -86,25 +102,29 @@ declare(list[const(char):ptr]).
 
 strings *=> list[const(char):ptr].
 
-func main =>
+int func main {
 	list[int] var int_list = list[int]:new(17);
 	strings var str_list = strings:new(10);
-	printf("Lists created with capacities %d and %d\n",
+	printf("Lists created with capacities %ld and %ld\n",
 		@(list[int]:capacity(int_list)),
 		@(strings:capacity(str_list)));
 
 	size_t var size = @(list[int]:capacity(int_list));
-	for(int var i = 0; i < size; i += 1) do (
+	for(int var i = 0; i < size; i += 1)
+	{
 		list[int]:append(int_list, i*i)
-	);
-	for(int var i = 0; i < size; i+= 1) do (
+	};
+	for(int var i = 0; i < size; i+= 1)
+	{
 		printf("%d squared = %d.\n", i, list[int]:get(int_list, i))
-	).
+	};
+	return 0
+}.
 
 % The templates macro. It generates no code.
 % Instead, it asserts a new macro in order to generate code for each declaration.
 % The generating macro itself asserts macros for renaming things.
-(Name[T] => Body) *=> Comment :-
+Name[T] {Body} *=> Comment :-
 	atom_concat('//Defined template type: ', Name, Comment),
 	\+ground(T), atom(Name),
 	assertz(

@@ -15,7 +15,7 @@ write_file(Terms, File) :-
 	consult_files(Terms),
 	expand_macros(Terms, NewTerms),
 	setup_call_cleanup(
-		open(File, write, S, [encoding(utf8)]),
+		open(File, write, S, [encoding(utf8), create([write])]),
 		(	asserta(this_file(File, S)),
 			write_lines((S,""), NewTerms)
 		),
@@ -60,6 +60,8 @@ write_lines((S,I), [Term|Others]) :-
 	indented_line((S,I), ETerm),
 	write_lines((S,I), Others).
 
+indented_line(_, *=>).
+
 indented_line(SS, A;B) :-
 	indented_line(SS, A),
 	indented_line(SS, B).
@@ -72,22 +74,16 @@ indented_line((S,I), Term) :-
 plain_line(SS, (:- Directive)) :- !,
 	write_directive(SS, Directive).
 
-plain_line(_, '*=>').
-
-plain_line((S,I), (Head => Body)) :-
+plain_line((S,I), {}({Body}, Head)) :-
 	block_head((S,I), Head),
 	functor(Head, Type, _),
 	block((S,I), Type, Body),
 	block_tail((S,I), Head).
 
-plain_line((S,I), do(H,B)) :- H =..[Type|Do],
-	write(S, Type),
-	in_parens(S,
-		exp_list((S,I), Do)),
-	block((S,I), do, B).
-
-plain_line(SS, then(C,B)) :-
-	cond_block(SS, then(C,B)).
+plain_line((S,I), else(T, F)) :-
+	plain_line((S,I), T),
+	write(S, " else "),
+	plain_line((S,I), F).
 
 plain_line((S,I), return(Value)) :-
 	write(S, "return "),
@@ -103,6 +99,11 @@ plain_line((S,_), Atom) :- atom(Atom),
 	;	write(S, "();")
 	).
 
+plain_line((S,I), {}(Val)) :-
+	write(S, "{\n"),
+	indented_line((S,I), Val),
+	write(S, "}\n").
+
 plain_line((S,I), Functor) :-
 	(	block_head((S,I), Functor),
 		!,
@@ -114,20 +115,6 @@ plain_line(_, Unknown) :- !,
 	format("ERROR: {~W} is not valid C+P code.~n",
 		[Unknown, [character_escapes(true), quoted(true)]]),
 	fail.
-
-cond_block((S,I), then(Cond, Result)) :-
-	write(S, 'if '),
-	in_parens(S,
-		exp((S,I), Cond)),
-	cond_block((S,I), Result).
-
-cond_block((S,I), else(IfTrue, IfFalse)) :-
-	cond_block((S,I),IfTrue),
-	write(S, ' else '),
-	cond_block((S,I), IfFalse).
-
-cond_block(SS, B) :-
-	block(SS, if, B).
 
 block_head((S,I), func(Name)) :-
 	block_head((S,I), func(void, Name)).
@@ -144,8 +131,13 @@ block_head((S,I), func(Type, Fn)) :-
 	).
 
 block_head((S,_), Head) :- Head =.. [Type, Name],
-	c_type_block(Type),
+	c_type_block(Type), !,
 	format(S, "typedef ~w ~w_t", [Type, Name]).
+
+block_head((S, I), Head) :- Head =.. [Type, Exp],
+	format(S, "~w ", [Type]),
+	in_parens(S,
+		exp((S,I), Exp)).
 
 block_head((S,_), Head) :- c_type_block(Head),
 	write(S, Head). 
@@ -254,8 +246,8 @@ qual_type((S,I), typeof(Exp), _) :-
 		exp((S,I), Exp)).
 qual_type(SS, atomic(Type), CBP) :-
 	qual_type(SS, '_Atomic'(Type), CBP).
-qual_type(SS, Head => Type, _) :-
-	plain_line(SS, Head => Type).
+qual_type(SS, {}(Body, Head), _) :-
+	plain_line(SS, {}(Body, Head)).
 qual_type((S,I), Type, CBP) :- Type =..[Qual,SubType],
 	write(S, Qual),
 	write(S, " "),

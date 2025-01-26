@@ -2,15 +2,20 @@
 
 max(A, B) *=> A > B then A else B.
 
-func max_check(int var (a, b)) =>
-	println("Max of %d and %d: %d", a, b, max(a, b)).
+func max_check(int var (a, b))
+{
+	println("Max of %d and %d: %d", a, b, max(a, b))
+}.
 
 PrintLn *=> PrintF :-
 	PrintLn =.. [println,Format| Args],
 	string_concat(Format, "\n", Format2),
 	PrintF =.. [printf,Format2| Args].
 
-func main =>
+int func main 
+{
 	max_check(12, 14);
 	float var f = max(12.3, 0) + 20;
-	println("Should be 32.3: %f", f).
+	println("Should be 32.3: %f", f);
+	return 0
+}.
