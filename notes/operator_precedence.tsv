@@ -1,0 +1,31 @@
+(C operators)	$x (Prolog Operators)	C+P Custom Operators	Notes
+x++ x-- () [] . -> (Type){list}	.	[] {} x@y (for ->)	#x (for characters)
++x -x --x ++x !x ~x (cast) *x &x	+x -x \x	++x --x *x &x !x ~x	
+	^		
+	**		
+* / %	* /, etc	/? (for modulo)	
+	?x		
++ - 	+ -, etc		
+<< >>		<< >>	
+	:		Use : for casts?
+< > etc	> < = == as is, etc		
+== !=		(Ouch. Just going to have slightly different precedence here)	
+& ^ |	\+ x	\+ \* \- (binary ops)	
+&&		and	
+||		or	
+x:y?z		x then y else z	
+= += -=, etc	:=	+= -= |=, etc	
+,	,		
+		func struct, etc	
+		var	
+	-> *->		Can I use these somewhere?
+	;		Use as statement separator
+	|	:: (something for bodies?)	
+	volatile public dynamic, etc		probably don't use these
+	:- ?- => --> etc		=> for macros, maybe?
+			
+			
+			
+			
+			
+			
