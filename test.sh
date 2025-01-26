@@ -24,6 +24,9 @@ gcc -Wall ./output/04_macros.c -o ./output/04_macros.out
 gcc -Wall ./output/05_generics.c -o ./output/05_generics.out
 gcc -Wall ./output/06_reflection.c -o ./output/06_reflection.out
 gcc -Wall ./output/07_directives.c -o ./output/07_directives.out
+gcc -Wall ./output/08a_headers.c -c -o ./output/08a_headers.o
+gcc -Wall ./output/08b_headers.c -c -o ./output/08b_headers.o
+gcc -Wall ./output/08a_headers.o ./output/08b_headers.o  -o ./output/08_headers.out
 
 echo "Running code..."
 ./output/00_hello_world.out
@@ -34,3 +37,4 @@ echo "Running code..."
 ./output/05_generics.out
 ./output/06_reflection.out
 ./output/07_directives.out
+./output/08_headers.out

@@ -1,54 +1,71 @@
-private
-{
-	:- include(stdio)
-}.
-
-module(header08)
+module('08a_headers')
 {
 	(:- include(stdint));
+	private {:- include(stdio)};
 
 	struct this_struct
 	{
 		int32_t var (a, b)
 	};
 
+	private
+	{
+		int var counter;
+		static(int32_t) func add(this_struct var s)
+		{
+			counter += 1;
+			return s.a+s.b
+		}
+	};
+
 	this_struct var this_var = {a=1, b=2};
 
-	int32_t func this_func(this_struct var s)
+	func this_func(this_struct var s)
 	{
-		printf("this func: %d\n", add(s.a, s.b))
-	}
-}.
-
-private {
-	int32_t func add(int32_t var (a, b))
-	{
-		return a+b
+		printf("this func: %d\n", add(s))
 	}
 }.
 
 :- consult('examples/meta_library').
 
 module(Name) {Body} *=> NewBody :-
-	this_file(Path, Stream),
+	this_file(Path, _),
 	(	atom_concat(_, '.h', Path)
-	->	(module_header(Name, Stream) {Body} *=> NewBody)
-	;	(module_body(Name, Stream){Body} *=> NewBody)
+	->	(module_header(Name) {Body} *=> NewBody)
+	;	(module_body(Name){Body} *=> NewBody)
 	).
 
-module_header(Name, Stream) {Body} *=>
-	\+ ['#ifndef ', Name, '_h'];
-	\+ ['#define ', Name, '_h'];
-	Body;
-	\+ ['#endif //', Name, '_h'].
+module_header(Name) {Body} *=>
+	\+ ['#ifndef h', Name, '_h'];
+	\+ ['#define h', Name, '_h'];
+	PublicBody;
+	\+ ['#endif //h', Name, '_h']
+:-
+	(remove_impl(Body) *=> PublicBody).
 
-private {Body} *=> NewBody :-
-	this_file(Path, Stream),
-	(	atom_concat(_, '.c', Path)
-	->	NewBody = Body
-	;	NewBody = '//Removed'
-	).
+module_body(Name) {Body} *=> 
+	(:- include(local(Name)));
+	ImplBody
+:-
+	(only_impl(Body) *=> ImplBody).
 
+remove_impl(A;B) *=> remove_impl_item(A); remove_impl(B).
+remove_impl(Other) *=> remove_impl_item(Other).
+
+remove_impl_item(func X {Body}) *=> func X.
+remove_impl_item(T func X {Body}) *=> T func X.
+remove_impl_item(T var X = Exp) *=> extern(T) var X.
+remove_impl_item(private {_}) *=> ''.
+remove_impl_item(Other) *=> Other.
+
+only_impl(A;B) *=> only_impl_item(A); only_impl(B).
+only_impl(Other) *=> only_impl_item(Other).
+
+only_impl_item(func X {Body}) *=> func X {Body}.
+only_impl_item(T func X {Body}) *=> T func X {Body}.
+only_impl_item(T var X = Exp) *=> T var X = Exp.
+only_impl_item(private {Body}) *=> Body.
+only_impl_item(Other) *=> ''.
 
 \+ Atoms *=> Concat :-
 	atomic_list_concat(Atoms, Concat).
