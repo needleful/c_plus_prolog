@@ -79,6 +79,12 @@ plain_line((S,I), else(T, F)) :-
 	write(S, " else "),
 	plain_line((S,I), F).
 
+plain_line((S, _), goto(case(Label))) :-
+	format(S, "goto case ~w;", [Label]).
+
+plain_line((S, _), goto(Label)) :-
+	format(S, "goto ~w;", [Label]).
+
 plain_line((S,I), return(Value)) :-
 	write(S, "return "),
 	exp((S,I), Value),
@@ -110,6 +116,8 @@ plain_line(_, Unknown) :- !,
 		[Unknown, [character_escapes(true), quoted(true)]]),
 	fail.
 
+block_head((S, _), default) :- !,
+	write(S, "default: ").
 block_head((S, _), A) :- atom(A), !,
 	write(S, A).
 
@@ -127,6 +135,17 @@ block_head((S,I), func(Type, Fn)) :-
 			args((S,I), Args))
 	).
 
+block_head((S, I), switch(Ex)) :-
+	write(S, "switch "),
+	in_parens(S,
+		exp((S, I), Ex)).
+
+block_head((S,_), label(A)) :-
+	format(S, "~w: ", [A]).
+block_head((S, I), Cases) :- compound_name_arguments(Cases, case, [C|Cs]),
+	format(S, "case ~w:", [C]),
+	case_labels((S, I), Cs).
+
 block_head((S,_), Head) :- compound_name_arguments(Head, Type, [Name]),
 	c_type_block(Type), !,
 	format(S, "typedef ~w ~w_t", [Type, Name]).
@@ -137,7 +156,7 @@ block_head((S, I), Head) :- compound_name_arguments(Head, Type, [Exp]),
 		exp((S,I), Exp)).
 
 block_head((S,_), Head) :- c_type_block(Head),
-	write(S, Head). 
+	write(S, Head).
 
 block_tail(_, Head) :- atom(Head).
 block_tail((S,_), Head) :-
@@ -280,6 +299,11 @@ type_prefix(_,_).
 type_suffix(S, array) :- write(S, "[]").
 type_suffix(S, array(Len)) :- format(S, "[~w]", [Len]).
 type_suffix(_, _).
+
+case_labels(_, []).
+case_labels((S, I), [C|Cs]) :-
+	format(S, "~n~wcase ~w: ", [I, C]),
+	case_labels((S,I), Cs).
 
 list(_, [], _).
 list(S, [Last], _) :-

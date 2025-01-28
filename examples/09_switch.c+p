@@ -1,34 +1,39 @@
-:- include(stdio).
+:- include(stdbool, stdio, stdlib).
 
-func main {
+int func main {
 	puts("How many chickens do you have?");
 	char:ptr var line = 'NULL';
 	while(true)
 	{
 		size_t var line_len;
-		size_t var len = getline(&line, &line_len, stdin);
+		getline(&line, &line_len, stdin);
 		int var chickens = atoi(line);
 		switch(chickens) {
-			0 {
+			case(0) {
 				puts("No chickens? How sad!");
 				goto(failure)
 			};
-			1 {
+			case(1) {
 				puts("A single one? That's no way to live life.");
+				break
 			};
-			2, 3, 4, 5 {
-				puts("Alright, you've got a few. That's good.");
-			};
-			6 {
+			case(6) {
 				puts("Six is my lucky number!")
-				goto(default);
+				% Fallthrough
+			};
+			case(2, 3, 4, 5) {
+				puts("Alright, you've got a few. That's good.");
+				break
 			};
 			default {
 				puts("Alright, you have quite a few chickens, actually")
 			}
 		}
 	};
+	return 0;
+
 	label(failure) {
-		free(line)
+		free(line);
+		return 1
 	}
 }.

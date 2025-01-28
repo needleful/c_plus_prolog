@@ -14,6 +14,7 @@ swipl -s cpp.pl -- ./examples/07_directives.c+p ./output/07_directives.c
 swipl -s cpp.pl -- ./examples/08a_headers.c+p ./output/08a_headers.c
 swipl -s cpp.pl -- ./examples/08a_headers.c+p ./output/08a_headers.h
 swipl -s cpp.pl -- ./examples/08b_headers.c+p ./output/08b_headers.c
+swipl -s cpp.pl -- ./examples/09_switch.c+p ./output/09_switch.c
 
 echo "Compiling C..."
 gcc -Wall ./output/00_hello_world.c -o ./output/00_hello_world.out
@@ -27,6 +28,7 @@ gcc -Wall ./output/07_directives.c -o ./output/07_directives.out
 gcc -Wall ./output/08a_headers.c -c -o ./output/08a_headers.o
 gcc -Wall ./output/08b_headers.c -c -o ./output/08b_headers.o
 gcc -Wall ./output/08a_headers.o ./output/08b_headers.o  -o ./output/08_headers.out
+gcc -Wall ./output/09_switch.c -o ./output/09_switch.out
 
 echo "Running code..."
 ./output/00_hello_world.out
@@ -38,3 +40,4 @@ echo "Running code..."
 ./output/06_reflection.out
 ./output/07_directives.out
 ./output/08_headers.out
+./output/09_switch.out
