@@ -163,5 +163,5 @@ unfold_type(Name[T]) *=> NT :- !,
 unfold_type(Fn) *=> QA :- Fn =.. [Q,A], !,
 	(unfold_type(Q:A) *=> QA).
 unfold_type(C) *=> invalid_type(C) :- !,
-	writer:this_file(F, _),
+	this_file(F, _),
 	format("ERROR: Invalid Type: `~w` [~w]~n", [C, F]).
