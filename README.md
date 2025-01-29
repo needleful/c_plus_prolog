@@ -68,7 +68,7 @@ C:
 a = this->member;
 ```
 
-- Complex declarations are very different, mostly because I don't particularly like C's type declarations.
+- Complex type declarations are different. C-style declarations are perfectly expressible in Prolog, I just don't like them.
 
 ```prolog
 char:ptr:array var argv
