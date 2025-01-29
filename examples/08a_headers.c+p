@@ -14,7 +14,7 @@ module('08a_headers')
 		static(int32_t) func add(this_struct var s)
 		{
 			counter += 1;
-			return s.a+s.b
+			return s.a + s.b + counter
 		}
 	};
 
@@ -22,7 +22,7 @@ module('08a_headers')
 
 	func this_func(this_struct var s)
 	{
-		printf("this func: %d\n", add(s))
+		printf("this func {%d, %d}: %d\n", s.a, s.b, add(s))
 	}
 }.
 

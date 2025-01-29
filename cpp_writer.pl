@@ -238,6 +238,10 @@ var(SS, Type, Name, _) :-
 
 single_var(SS, (Base:Type):Sp, Name) :- !,
 	single_var(SS, Base:Type:Sp, Name).
+single_var(SS, (A->B):Special, Name) :- !,
+	special_var(SS, (A->B):Special, Name).
+single_var(SS, (A->B), Name) :-
+	special_var(SS, (A->B), Name).
 single_var(SS, BaseType:Special, Name) :- !,
 	qual_type(SS, BaseType, false),
 	special_var(SS, Special, Name).
@@ -281,23 +285,30 @@ special_var((S,I), First:Next, Name) :-
 	;	in_parens(S,
 			special_var((S,I), Next, Name))
 	),
-	type_suffix(S, First).
+	type_suffix((S,I), First).
 
 special_var((S,I), Last, Name) :-
 	type_prefix((S,I), Last),
 	(	Name = []
 	;	write(S, " "), 
 		write(S, Name)),
-	type_suffix(S, Last).
+	type_suffix((S,I), Last).
 
 type_prefix((S,_), ptr) :- write(S, "*").
 type_prefix(_, array).
 type_prefix(_, array(_)).
+type_prefix(SS, (_ -> Out)) :- 
+	type(SS, Out).
 type_prefix(SS, Qual) :- qual_type(SS, Qual, true).
 type_prefix(_,_).
 
-type_suffix(S, array) :- write(S, "[]").
-type_suffix(S, array(Len)) :- format(S, "[~w]", [Len]).
+type_suffix((S, _), array) :- write(S, "[]").
+type_suffix((S, _), array(Len)) :- format(S, "[~w]", [Len]).
+type_suffix((S, I), (In -> _)) :-
+	comma_fold(In, InList),
+	in_parens(S,
+		args((S, I), InList)
+	).
 type_suffix(_, _).
 
 case_labels(_, []).
@@ -349,6 +360,9 @@ exp((S,I), {Val}) :-
 	write(S, "{"),
 	struct_literal((S,I), Val),
 	write(S, "}").
+
+exp((S, _), #(A)) :- atomic(A),
+	write(S, "'~w'", A).
 
 exp((S,I), Fn) :- compound_name_arguments(Fn, Name, Args),
 	cpp_functor((S,I), Name, Args).
@@ -415,3 +429,7 @@ in_parens(S, Format) :-
 	write(S, "("),
 	call(Format),
 	write(S, ")").
+
+comma_fold((A,B), [A|List]) :-
+	comma_fold(B, List).
+comma_fold(A, [A]).

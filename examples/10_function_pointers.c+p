@@ -1,0 +1,31 @@
+:- include(stdio).
+
+% A rather inelegant syntax for function pointers
+func show(const(char):ptr var name, (int, int -> int):ptr var fn) {
+	int var a = 20, b = 32;
+	printf("%s(%d, %d) = %d\n", name, a, b, fn(a, b))
+}.
+
+func repeat(unsigned(int) var times, (void -> void):ptr var fn) {
+	for(int var i = 0; i < times; i += 1) {
+		fn()
+	}
+}.
+
+func hello {
+	puts("Hello")
+}.
+
+int func mul(int var a, int var b) {
+	return a*b
+}.
+
+int func add(int var a, int var b) {
+	return a+b
+}.
+
+int func main {
+	show("add", &add);
+	show("mul", &mul);
+	repeat(5, &hello)
+}.

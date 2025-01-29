@@ -1,5 +1,4 @@
 :- include(ctype, stdbool, stdio, stdlib, string).
-:- consult('examples/meta_library').
 
 % Poor man's generics
 list[T]
@@ -133,7 +132,7 @@ Name[T] {Body} *=> Comment :-
 			ground(Z),
 			T=Z,
 			Body=NewBody,
-			(mangled_name(Name[Z]) *=> ZName),
+			('*mangled_name'(Name[Z]) *=> ZName),
 			assertz(Name[Z] *=> ZName),
 			assertz((ZName:Method *=> ZMethod :-
 				% Crudely hacking some shorthand for method names
@@ -143,25 +142,26 @@ Name[T] {Body} *=> Comment :-
 					ZArgs = []
 				;	Method =.. [MName|ZArgs]
 				),
-				(mangled_name(ZName:MName) *=> MZ_Name),
+				('*mangled_name'(ZName:MName) *=> MZ_Name),
 				ZMethod =.. [MZ_Name|ZArgs]
 			))
 		)).
 
-mangled_name(Type) *=> Renamed :-
-	(unfold_type(Type) *=> TypeList),
+% Prefixing these macros with * to prevent name collisions with user functions and macros
+'*mangled_name'(Type) *=> Renamed :-
+	('*unfold_type'(Type) *=> TypeList),
 	atomic_list_concat(TypeList, '_', Renamed).
 
-unfold_type(A) *=> [A] :- atom(A), !.
-unfold_type(A:B) *=> AB :- !,
-	(unfold_type(A) *=> AL),
-	(unfold_type(B) *=> BL),
+'*unfold_type'(A) *=> [A] :- atom(A), !.
+'*unfold_type'(A:B) *=> AB :- !,
+	('*unfold_type'(A) *=> AL),
+	('*unfold_type'(B) *=> BL),
 	A \= [], B \= [],
 	append(AL, BL, AB).
-unfold_type(Name[T]) *=> NT :- !,
-	(unfold_type(Name:T:gen) *=> NT).
-unfold_type(Fn) *=> QA :- Fn =.. [Q,A], !,
-	(unfold_type(Q:A) *=> QA).
-unfold_type(C) *=> invalid_type(C) :- !,
+'*unfold_type'(Name[T]) *=> NT :- !,
+	('*unfold_type'(Name:T:gen) *=> NT).
+'*unfold_type'(Fn) *=> QA :- Fn =.. [Q,A], !,
+	('*unfold_type'(Q:A) *=> QA).
+'*unfold_type'(C) *=> invalid_type(C) :- !,
 	this_file(F, _),
 	format("ERROR: Invalid Type: `~w` [~w]~n", [C, F]).

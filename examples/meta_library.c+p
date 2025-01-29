@@ -2,9 +2,9 @@
 
 % Compile-time loop.
 % Usage could be something like
-% forall(Name: [a, b, c]) do (Name += 1).
-% It only runs on terms that exist in the list,
-% so it's ripe with opportunity to do some horrible things.
+% forall(Name: [a, b, c]) { Name += 1 }.
+% It uses `findall`, which filters out terms that don't match the Bind,
+% so it's ripe with opportunity for some big-brain filtering.
 forall(Bind: List) {Body} *=> statement_fold(S, NList) :-
 	findall(Body, member(Bind, List), [S|NList]).
 
@@ -13,4 +13,4 @@ statement_fold(S, []) *=> S.
 statement_fold(S, [N|NList]) *=> statement_fold(S;N, NList).
 
 % Good old 'nameof'. Everybody needs it.
-nameof(Exp) *=> String :- \+var(Exp), sformat(String, "~w", Exp).
+nameof(Exp) *=> String :- ground(Exp), sformat(String, "~w", Exp).

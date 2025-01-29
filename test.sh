@@ -15,6 +15,7 @@ swipl -s cpp.pl -- ./examples/08a_headers.c+p ./output/08a_headers.c
 swipl -s cpp.pl -- ./examples/08a_headers.c+p ./output/08a_headers.h
 swipl -s cpp.pl -- ./examples/08b_headers.c+p ./output/08b_headers.c
 swipl -s cpp.pl -- ./examples/09_switch.c+p ./output/09_switch.c
+swipl -s cpp.pl -- ./examples/10_function_pointers.c+p ./output/10_function_pointers.c
 
 echo "Compiling C..."
 gcc -Wall ./output/00_hello_world.c -o ./output/00_hello_world.out
@@ -29,6 +30,7 @@ gcc -Wall ./output/08a_headers.c -c -o ./output/08a_headers.o
 gcc -Wall ./output/08b_headers.c -c -o ./output/08b_headers.o
 gcc -Wall ./output/08a_headers.o ./output/08b_headers.o  -o ./output/08_headers.out
 gcc -Wall ./output/09_switch.c -o ./output/09_switch.out
+gcc -Wall ./output/10_function_pointers.c -o ./output/10_function_pointers.out
 
 echo "Running code..."
 ./output/00_hello_world.out
@@ -41,3 +43,4 @@ echo "Running code..."
 ./output/07_directives.out
 ./output/08_headers.out
 ./output/09_switch.out
+./output/10_function_pointers.out
