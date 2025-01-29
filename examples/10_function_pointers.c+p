@@ -6,14 +6,15 @@ func show(const(char):ptr var name, (int, int -> int):ptr var fn) {
 	printf("%s(%d, %d) = %d\n", name, a, b, fn(a, b))
 }.
 
-func repeat(unsigned(int) var times, (void -> void):ptr var fn) {
-	for(int var i = 0; i < times; i += 1) {
-		fn()
-	}
+struct callback {
+	(const(char):ptr -> int):ptr var fn;
+	const(char):ptr var arg
 }.
 
-func hello {
-	puts("Hello")
+func repeat(unsigned(int) var times, callback var f) {
+	for(int var i = 0; i < times; i += 1) {
+		f.fn(f.arg)
+	}
 }.
 
 int func mul(int var a, int var b) {
@@ -27,5 +28,6 @@ int func add(int var a, int var b) {
 int func main {
 	show("add", &add);
 	show("mul", &mul);
-	repeat(5, &hello)
+	callback var c = {fn = &puts, arg = "Hello"};
+	repeat(5, c)
 }.
