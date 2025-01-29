@@ -1,5 +1,5 @@
-(C operators)	$x (Prolog Operators)	C+P Custom Operators	Notes
-x++ x-- () [] . -> (Type){list}	.	[] {} x@y (for ->)	#x (for characters)
+(C operators)	(Prolog Operators)	C+P Custom Operators	Notes
+x++ x-- () [] . -> (Type){list}	$x .	[] {} x@y (for ->)	#x (for characters)
 +x -x --x ++x !x ~x (cast) *x &x	+x -x \x	++x --x *x &x !x ~x	
 	^		
 	**		
