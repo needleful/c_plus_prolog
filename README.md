@@ -206,7 +206,7 @@ By God. Our macro `assert`s another macro, `declare(Name[Z])`. It also has condi
 ```
 Those three lines are the bulk of the macro. It unifies the template type `T` with the real (ground) type `Z`, then returns the body of the template. This is what turns `declare(list[int])` into the code for the type.
 
-But that's not all it does, the macro we're asserting with itself assert more macros:
+But that's not all it does, the macro we're asserting itself asserts more macros:
 ```prolog
 			('*mangled_name'(Name[Z]) *=> ZName),
 			assertz(Name[Z] *=> ZName),
@@ -224,15 +224,15 @@ But that's not all it does, the macro we're asserting with itself assert more ma
 		)).
 ```
 
-This generates the C names for things like `list[int]` and `list[int]:function`. `'*mangled_name'` is itself a macro, but you can just read example 05. The `*` and single quotes are nothing special, they just prevent this macro from accidentally colliding with some user-defined `mangled_name`.
+This generates the C names for things like `list[int]` and `list[int]:function`. `'*mangled_name'` is just another macro, but this example is long enough and it's all in example 05. The `*` and single quotes are nothing special, they just prevent this macro from accidentally colliding with a user-defined `mangled_name` function.
 
-C+P provides no type information we could use for method syntax, like `my_list.append(...)`, instead of `list[int]:append(my_list, ...)`.
+C+P provides no type information we could use for method syntax, to do something like `my_list.append(...)`, instead of `list[int]:append(my_list, ...)`.
 
-We could use macros to gather the types of every variable and function, and automatically swap out method-like syntax for typed functions, but at a certain point I'm just writing a full-on XLang-to-C compiler in the macro system, which is an interesting idea, but I'm employed.
+We could, of course, use macros to gather the types of every variable in a function body and swap out method calls for the appropriate function, but at a certain point I'm just writing a full-on XLang-to-C compiler in the macro system, which is an interesting idea, but I'm employed.
 
-Still, I've provided several other examples of the wonders of C Plus Prolog:
-- Example 06 allows for iterating fields of a struct by overloading the `struct` keyword.
-- Example 08a can be compiled as either a header or C source, depending on the extension of the output, and then compiled with Example 08b.
+I've provided several other examples of the wonders of C Plus Prolog:
+- Example 06 overloads the `struct` keyword to add compile-time reflection.
+- Example 08a compiles different code if the target file ends in `.h` or `.c`, to declare a typical header and implementation in a single file.
 
 I find it strangely compelling to write in C+P, adding features that sound impossible. It's like a puzzle game, which is why I reach for Prolog so frequently.
 
@@ -259,7 +259,7 @@ The correct answer is to do what Bret Victor seems to have done, which is to bui
 C+P is surprisingly close to what I'd need, for how little work I've put into it.
 It's a thin wrapper around C, so interop and platform support are easily-solved problems, but Prolog's term rewriting allows for basically whatever code generation I want, with much less effort than most language's macro systems or trying to parse it externally.
 
-Of course, the hard part is making it do all of that live-editing stuff, not building a weird mess of incomprehensible Prolog code. But that part will take much longer, and I'm employed.
+Of course, the hard part is making it do all of that live-editing stuff, not building a weird mess of incomprehensible Prolog code. But that part will take much longer, and, again, I'm employed.
 
 The main things I would want for a real take on this language would be the following:
 
