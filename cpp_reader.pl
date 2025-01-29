@@ -43,12 +43,12 @@
 :- op(105,  xfy, @).
 :- op(1,    fx,  #).
 
-read_file(Name, Terms) :-
+read_file(Name, Terms) :- \+ consulted(Name),
 	assert(consulted(Name)),
 	read_file_to_terms(Name, InTerms, [module(cpp_reader)]),
 	find_macros(InTerms, Terms).
 
-consult(Name) :- \+ consulted(Name),
+consult(Name) :-
 	(	atom(Name)
 	->	atom_concat(Name, '.c+p', Path)
 	;	Path = Name
