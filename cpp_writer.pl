@@ -76,7 +76,7 @@ plain_line((S,I), {}({Body}, Head)) :-
 
 plain_line((S,I), else(T, F)) :-
 	plain_line((S,I), T),
-	write(S, " else "),
+	format(S, "~n~welse ", [I]),
 	plain_line((S,I), F).
 
 plain_line((S, I), goto(case(Label))) :-
@@ -101,10 +101,8 @@ plain_line((S,_), Atom) :- atom(Atom),
 	;	true
 	).
 
-plain_line((S,I), {}(Val)) :-
-	write(S, "{\n"),
-	indented_line((S,I), Val),
-	write(S, "}\n").
+plain_line(SS, {}(Val)) :-
+	block(SS, base, Val).
 
 plain_line((S,I), Functor) :-
 	(	block_head((S,I), Functor),
@@ -167,8 +165,7 @@ block_tail((S,_), Head) :-
 block_tail(_,_).
 
 block((S,I), Type, Block) :-
-	write(S, " {"),
-	nl(S),
+	format(S, "~n~w{~n", [I]),
 	string_concat(I, "\t", I2),
 	(	Type=enum
 	->	write_enum((S,I2), Block)
