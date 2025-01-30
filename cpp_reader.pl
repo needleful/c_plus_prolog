@@ -25,6 +25,7 @@
 :- op(700,  xfx, '&=').
 :- op(700,  xfx, '|=').
 :- op(700,  xfx, ^=).
+:- op(700,  xfx, '!=').
 :- op(690,  yfx, as).
 :- op(680,  xfx, var).
 :- op(680,  fx,  var).
@@ -53,7 +54,8 @@ consult(Name) :-
 	->	atom_concat(Name, '.c+p', Path)
 	;	Path = Name
 	),
-	read_file(Path, _).
+	read_file(Path, _),
+	format("Consulted ~w~n", [Name]).
 
 find_macros([], []).
 find_macros([M|Terms], Result) :-

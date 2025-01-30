@@ -79,8 +79,10 @@ plain_line((S,I), else(T, F)) :-
 	write(S, " else "),
 	plain_line((S,I), F).
 
-plain_line((S, _), goto(case(Label))) :-
-	format(S, "goto case ~w;", [Label]).
+plain_line((S, I), goto(case(Label))) :-
+	write(S, "goto case"),
+	exp((S,I), Label),
+	write(S, ";").
 
 plain_line((S, _), goto(Label)) :-
 	format(S, "goto ~w;", [Label]).
@@ -142,9 +144,8 @@ block_head((S, I), switch(Ex)) :-
 
 block_head((S,_), label(A)) :-
 	format(S, "~w: ", [A]).
-block_head((S, I), Cases) :- compound_name_arguments(Cases, case, [C|Cs]),
-	format(S, "case ~w:", [C]),
-	case_labels((S, I), Cs).
+block_head((S, I), Cases) :- compound_name_arguments(Cases, case, Cs),
+	case_labels((S, I), Cs, ('', '')).
 
 block_head((S,_), Head) :- compound_name_arguments(Head, Type, [Name]),
 	c_type_block(Type), !,
@@ -180,7 +181,8 @@ write_directive((S,I), Directive) :-
 	compound_name_arguments(Directive, Name,  Args),
 	(	directive((S,I), Name, Args)
 	;	call(Directive)
-	;	format('WARNING: Directive failed: `~w`~n', [Directive])).
+	;	this_file(F, _),
+		format("WARNING: Directive failed: `~w` [~w]~n", [Directive, F])).
 
 directive(_, include, []).
 directive((S,I), include, [Name|Names]) :-
@@ -311,10 +313,12 @@ type_suffix((S, I), (In -> _)) :-
 	).
 type_suffix(_, _).
 
-case_labels(_, []).
-case_labels((S, I), [C|Cs]) :-
-	format(S, "~n~wcase ~w: ", [I, C]),
-	case_labels((S,I), Cs).
+case_labels(_, [], _).
+case_labels((S, I), [C|Cs], (NL, I2)) :-
+	format(S, "~w~wcase ", [I2, NL]),
+	exp((S, I), C),
+	write(S, ": "),
+	case_labels((S,I), Cs, ('\n', I)).
 
 list(_, [], _).
 list(S, [Last], _) :-
@@ -361,8 +365,12 @@ exp((S,I), {Val}) :-
 	struct_literal((S,I), Val),
 	write(S, "}").
 
-exp((S, _), #(A)) :- atomic(A),
-	write(S, "'~w'", A).
+exp((S, _), #(A)) :-
+	(	atom(A),
+		char_code(A, N)
+	;	integer(A),
+		N = A),
+	format(S, "'\\~8r'", N).
 
 exp((S,I), Fn) :- compound_name_arguments(Fn, Name, Args),
 	cpp_functor((S,I), Name, Args).

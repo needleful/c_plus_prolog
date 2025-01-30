@@ -47,8 +47,8 @@ print(Struct, S) *=>
 
 print(_, S) *=> printf("%s (can't print)\n", nameof(S)).
 
-% A macro that returns the same syntax as before, but records the type info
-% uses a compiler-provided dynamic predicate custom_data/1.
+% A macro that returns the same syntax as before, but records the type info.
+% Uses a compiler-provided dynamic predicate custom_data/1.
 struct Name {Body} *=> struct Name {Body} :-
 	% Now we have to prevent this macro from running again
 	% otherwise it loops infinitely because the syntax is the same.

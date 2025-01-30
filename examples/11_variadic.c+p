@@ -1,0 +1,48 @@
+:- include(stdarg, stdbool, stdio).
+
+% I spent 20 minutes trying to figure out why this code wasn't working.
+% It was because I forgot to put break.
+X -> {Body} *=> case(X) {Body;break}.
+
+func print_line(const(char):ptr var format, ...) 
+{
+	va_list var args;
+	va_start(args, format);
+
+	bool var format_char = false;
+	'// Useful to note: atoms are inserted literally';
+	for('';*format \= #0; format += 1) {
+		if(format_char) {
+			switch(*format) {
+				#i -> {
+					long var i = va_arg(args, long);
+					printf("%ld", i)
+				};
+				#f -> {
+					double var f = va_arg(args, double);
+					printf("%f", f)
+				};
+				#'%' -> {
+					putc(#'%',stdout)
+				};
+				default {
+					putc(*format,stdout)
+				}
+			};
+			format_char = false
+		}
+		else if(*format == #'%') {
+			format_char = true
+		}
+		else {
+			putc(*format,stdout)
+		}
+	};
+	putc(#'\n',stdout);
+	va_end(args)
+}.
+
+int func main
+{
+	print_line("Print: %i %f", 109, 2.5)	
+}.
