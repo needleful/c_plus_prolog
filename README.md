@@ -100,7 +100,7 @@ Take this snippet from example 04:
 max(A, B) *=> A > B then A else B.
 ```
 
-I said C+P does no processing beyond translating terms to C, but it does one small step. The compiler will gather all the terms defined with `*=>`, and then substitute the left-hand for the right-hand in the rest of the code until no rules more apply.
+I said C+P does no processing beyond translating terms to C, but it does one small step. The compiler will gather all the terms defined with `*=>`, and then substitute the left-hand for the right-hand in the rest of the code until no more rules apply.
 
 Because this operates on Prolog terms, not text, we don't need any extra parentheses in our `max(A, B)` macro to prevent mishaps with operator precedence. It's inserted into code as a single term, and looks exactly like a function call in use:
 
