@@ -250,9 +250,13 @@ Check `test.sh` and `test.ps1` for more example usage, plus a fast way to run al
 ## What is the point of this?
 
 C Plus Prolog is a half-serious exploration of macros in a systems programming language.
-It made it clear I prefer the compile-time evaluation and reflection offered by languages like D and Zig over syntactic macros.
+In the process of making this, it became clear I prefer the compile-time evaluation and reflection offered by languages like D and Zig over syntactic macros.
 
-Sure, with enough work you can do everything and more with a macro system like Common Lisp, Rust, or C+P, but what does the macro system actually *add* over a separate code generator, or a DSL? A nicer interface, maybe.
+Sure, with enough work you can do everything and more with the macro system, but what does it actually *add* over a separate code generator, or a DSL? A nicer interface, maybe.
+
+In Common Lisp, you have the full codebase at compile time, but the real value is recompiling code at runtime, not manipulating a list of lists that sort of looks like code, if you squint through all the backquotes and commas.
+
+Rust's procedural macros save maybe 40 lines of code, since you don't have to write your own tokenizer, but everything else is up to you and whatever libraries you want to bring in.
 
 Most of my metaprogramming wants involve reflecting on information the compiler already knows, like the types and annotations in the code, not the raw syntax tree.  For a language-within-a-language, which syntactic macros are best at, I'd usually rather go the extra mile and make an entirely separate DSL with a purpose-built syntax, rather than contort the problem to, say, S expressions or Prolog terms.
 
@@ -260,4 +264,11 @@ Despite that, C+P is dangerously close to being useful.
 The biggest advantage it has is the fact it generates plain C by default, allowing for performant cross-platform builds where less popular languages don't have support, or have to generate much more complicated C due to different abstractions.
 Prolog's been around for 50 years, as well. If the SWI-Prolog extensions were removed, swapping `func F {Body}` with `func F => Body`, for example, it could be built on a huge swath of hardware.
 
-And while I don't find the macros as useful as D's metaprogramming, it's certainly a league above plain C macros.
+But I wouldn't want to use it. There's absolutely no validation or error messaging, so any mistakes lead to broken C or silent failures. I thought using `var` as an operator would be nice, but it's a lot of visual noise.  And if you thought C's semicolons were annoying, in C Plus Prolog, semicolons are operators. Having two in a row breaks things. Having one at the start breaks things. Having one at the *end* breaks things.
+
+If someone wanted to use C+P, there are many better alternatives.
+- The [Nim](https://nim-lang.org/) and [Haxe](https://haxe.org/) languages can compile to C and/or C++, and they offer a good user experience out of the box, though I can't say how directly their code translates to C.
+- [cmacro](https://github.com/eudoxia0/cmacro) offers a similar level of syntax manipulation to C+P in a nicer format, powered by Common Lisp.
+- [The D language](https://dlang.org/) Has compilers backed by GCC and LLVM, so it should work in most places C will.
+
+I don't know what the conclusion is.
