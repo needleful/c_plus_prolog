@@ -249,25 +249,15 @@ Check `test.sh` and `test.ps1` for more example usage, plus a fast way to run al
 
 ## What is the point of this?
 
-C Plus Prolog is a half-serious exploration of ideas for a programming language. The long-term vision is something with live-editing tools akin to [this demonstration from Bret Victor](https://www.youtube.com/watch?v=PUv66718DII), suitable for games. Imagine viewing some code, having tools to tweak variables visually, and then getting instant feedback while the game is running.
+C Plus Prolog is a half-serious exploration of macros in a systems programming language.
+It made it clear I prefer the compile-time evaluation and reflection offered by languages like D and Zig over syntactic macros.
 
-I'd prefer using a statically-typed, compiled language for the compile-time validation and performance, which complicates this sort of dynamic activity.
-The way I envisioned it working is by parsing the code and generating the infrastructure to tune it in real-time, without recompiling. For example, pulling all constant values out of a function and turning them into variables that can be configured in-game, simultaneously updating the source text. For more extensive changes, the code could be unloaded and recompiled like you would do with a typical DLL-based plugin, at the cost of freezing the game for a few seconds.
+Sure, with enough work you can do everything and more with a macro system like Common Lisp, Rust, or C+P, but what does the macro system actually *add* over a separate code generator, or a DSL? A nicer interface, maybe.
 
-The correct answer is to do what Bret Victor seems to have done, which is to build the tools on top of an existing programming language, but I hate writing parsers and I hate reading specs. One thing I love, however, is using Prolog in places where it's not expected.
+Most of my metaprogramming wants involve reflecting on information the compiler already knows, like the types and annotations in the code, not the raw syntax tree.  For a language-within-a-language, which syntactic macros are best at, I'd usually rather go the extra mile and make an entirely separate DSL with a purpose-built syntax, rather than contort the problem to, say, S expressions or Prolog terms.
 
-C+P is surprisingly close to what I'd need, for how little work I've put into it.
-It's a thin wrapper around C, so interop and platform support are easily-solved problems, but Prolog's term rewriting allows for basically whatever code generation I want, with much less effort than most language's macro systems or trying to parse it externally.
+Despite that, C+P is dangerously close to being useful.
+The biggest advantage it has is the fact it generates plain C by default, allowing for performant cross-platform builds where less popular languages don't have support, or have to generate much more complicated C due to different abstractions.
+Prolog's been around for 50 years, as well. If the SWI-Prolog extensions were removed, swapping `func F {Body}` with `func F => Body`, for example, it could be built on a huge swath of hardware.
 
-Of course, the hard part is making it do all of that live-editing stuff, not building a weird mess of incomprehensible Prolog code. But that part will take much longer, and, again, I'm employed.
-
-The main things I would want for a real take on this language would be the following:
-
-- _Type and scope information._ Most of the limitations on the reflection are from an inability to detect what's what, since the macros operate strictly on the syntax, with no semantic information. Various extensions, like method syntax, would require figuring out things like the type of a value, where it's declared, where it's used, and things like that. I'd probably put this into the compiler, but they could also be a particularly complex “macro”.
-- _Better error messaging._ I've put in almost no error handling or messaging, and that makes troubleshooting code very difficult. Typically, I just check the generated C and figure out what went wrong from there. The fact that the compiler errors will only refer to C is also a bit troublesome, but it's usually pretty easy to cross-reference the code and see where it was generated.
-- _Less confusing syntax._ There are various places where C and Prolog syntax interact poorly, like the akward `}.` to end functions, or the fact it's invalid to put a semicolon after the last statement in a block. I could either make the syntax more Prolog-esque, perhaps something more like Erlang, or make my own term rewriting language and design whatever syntax primitives I want. But if I made my own, at that point making a parser and code generator for an existing language would probably be a more reasonable option.
-- _An alternate, dynamic runtime._ If the goal is to make something that can be used like Bret Victor's demonstration, I'd want an environment where I can freely edit and rearrange ALL the code, not just tweak some numbers. This is obviously a lot of work, not just making the runtime and compiler, but losing access to the C standard library. An option is a C interpreter, but there's only a handful of them, and I'm not sure they support the sort of features I'm looking for. Maybe extending one would be an option.
-
-I think to know for sure if C+P has any legs, I'll need to make a prototype of this editing system with it.
-
-Until then, it's a fun little oddity, an entertaining puzzle to make things in.
+And while I don't find the macros as useful as D's metaprogramming, it's certainly a league above plain C macros.

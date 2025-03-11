@@ -1,9 +1,9 @@
-:- include(stdbool, stdio, stdlib).
+:- include(stdio, stdlib, string).
 
 int func main {
 	puts("How many chickens do you have?");
 	char:ptr var line = 'NULL';
-	while(true)
+	while(1)
 	{
 		size_t var line_len;
 		getline(&line, &line_len, stdin);

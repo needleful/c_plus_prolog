@@ -2,6 +2,7 @@
 
 % I spent 20 minutes trying to figure out why this code wasn't working.
 % It was because I forgot to put break.
+% So here's a macro to do it for me.
 X -> {Body} *=> case(X) {Body;break}.
 
 func print_line(const(char):ptr var format, ...) 

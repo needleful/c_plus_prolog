@@ -11,6 +11,9 @@ swipl -s cpp.pl -- .\examples\07_directives.c+p .\output\07_directives.c
 swipl -s cpp.pl -- .\examples\08a_headers.c+p .\output\08a_headers.c
 swipl -s cpp.pl -- .\examples\08a_headers.c+p .\output\08a_headers.h
 swipl -s cpp.pl -- .\examples\08b_headers.c+p .\output\08b_headers.c
+swipl -s cpp.pl -- .\examples\09_switch.c+p .\output\09_switch.c
+swipl -s cpp.pl -- .\examples\10_function_pointers.c+p .\output\10_function_pointers.c
+swipl -s cpp.pl -- .\examples\11_variadic.c+p .\output\11_variadic.c
 
 echo "Compiling C..."
 iex "$($cc) -Wall .\output\00_hello_world.c -o .\output\00_hello_world.exe"
@@ -24,6 +27,9 @@ iex "$($cc) -Wall ./output/07_directives.c -o ./output/07_directives.exe"
 iex "$($cc) -Wall ./output/08a_headers.c -c -o ./output/08a_headers.o"
 iex "$($cc) -Wall ./output/08b_headers.c -c -o ./output/08b_headers.o"
 iex "$($cc) -Wall ./output/08a_headers.o ./output/08b_headers.o  -o ./output/08_headers.exe"
+iex "$($cc) -Wall ./output/09_switch.c -o ./output/09_switch.exe"
+iex "$($cc) -Wall ./output/10_function_pointers.c -o ./output/10_function_pointers.exe"
+iex "$($cc) -Wall ./output/11_variadic.c -o ./output/11_variadic.exe"
 
 echo "Running code..."
 .\output\00_hello_world.exe
@@ -35,3 +41,6 @@ echo "Running code..."
 .\output\06_reflection.exe
 .\output\07_directives.exe
 .\output\08_headers.exe
+.\output\09_switch.exe
+.\output\10_function_pointers.exe
+.\output\11_variadic.exe
